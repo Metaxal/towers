@@ -1,3 +1,5 @@
+NOT READY YET!
+
 Towers is an original board game for 2 players
 
 It is licensed under the GPLv3 (see COPYING)
