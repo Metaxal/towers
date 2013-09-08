@@ -1,1 +1,0 @@
-("5.90.0.9" ("c34cee4f1d359f3db907876bef5fc24b0c163e4f" . "4cdfc95d49dc3242d10e8ac6e7dbf171ad411b86") (collects #"towers-lib" #"game.rkt") (collects #"racket" #"runtime-config.rkt") (collects #"racket" #"class.rkt") (collects #"racket" #"base.rkt") (collects #"towers-lib" #"base.rkt"))
