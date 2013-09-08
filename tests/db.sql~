@@ -1,0 +1,55 @@
+SET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";
+
+SET NAMES utf8;
+
+DROP DATABASE IF EXISTS `towers-test`;
+CREATE DATABASE `towers-test` DEFAULT CHARACTER SET latin1 COLLATE latin1_swedish_ci;
+USE `towers-test`;
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `games`
+--
+
+CREATE TABLE IF NOT EXISTS `games` (
+  `gameID` int(11) NOT NULL AUTO_INCREMENT,
+  `username1` varchar(100) NOT NULL,
+  `username2` varchar(100) NOT NULL,
+  `size` int(11) NOT NULL,
+  `fullGame` text NOT NULL,
+  `nextPlayer` varchar(100) NOT NULL,
+  `lastUpdateDate` int(11) NOT NULL,
+  `finished` tinyint(1) NOT NULL DEFAULT '0',
+  `winner` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`gameID`)
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 AUTO_INCREMENT=106 ;
+
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `users`
+--
+
+CREATE TABLE IF NOT EXISTS `users` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL DEFAULT '',
+  `username` varchar(150) NOT NULL DEFAULT '',
+  `email` varchar(100) NOT NULL DEFAULT '',
+  `password` varchar(100) NOT NULL DEFAULT '',
+  `salt` varchar(100) NOT NULL DEFAULT '',
+  `usertype` varchar(25) NOT NULL DEFAULT '',
+  `block` tinyint(4) NOT NULL DEFAULT '0',
+  `sendEmail` tinyint(4) DEFAULT '0',
+  `isPlayer` int(11) NOT NULL DEFAULT '1',
+  `gameNotifyEmail` int(11) NOT NULL DEFAULT '0',
+  `elo` int(11) NOT NULL DEFAULT '1000',
+  PRIMARY KEY (`username`),
+  KEY `usertype` (`usertype`),
+  KEY `email` (`email`)
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 AUTO_INCREMENT=167 ;
+
+INSERT INTO `users` (`id`, `name`, `username`, `email`, `password`, `salt`, `usertype`, `block`, `sendEmail`, `isPlayer`, `gameNotifyEmail`, `elo`) VALUES
+(67, 'Plop', 'plop', 'plop@plip.com', '249214cd9d4c66d1738b15be82f2c0c0', 'YNhLNhlMgpO3EvglP83HFNBBKnXcq49A', 'Registered', 0, 1, 1, 1, 964),
+(74, 'Plip', 'plip', 'plip@plop.com', '95bdb8fc7afda0b465ffa7f68cf61563', 'inzAuE8sguDMCLH8bSz4L4nY5JnWCuXh', 'Registered', 0, 1, 1, 0, 1037);

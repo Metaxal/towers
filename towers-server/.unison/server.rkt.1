@@ -1,0 +1,95 @@
+#lang racket/base
+;;; Copyright (C) Laurent Orseau, 2010-2013
+;;; GNU General Public Licence 3 (http://www.gnu.org/licenses/gpl.html)
+
+#;(require towers-lib/base
+         towers-lib/game
+         towers-lib/connection
+         "db.rkt")
+
+(require (prefix-in db: "db.rkt")
+         web-server/servlet
+         web-server/servlet-env
+         web-server/page
+         racket/format)
+
+;; to implement:
+;; newuser, getsalt
+;; getplayers, getgame, updategame, 
+;; listgames, listcurrentgames, checkauth
+
+;; see do.php
+
+(define (update-game game-id ply)
+  ;todo:
+  ; get game from db
+  ; add ply
+  ; verify that ply is ok
+  ; push new game to db
+  ; send email to next player
+  #f)
+
+(define (start req)
+  (define (get-value sym [default #f])
+    (or (get-binding sym req) default))
+  (define date     (get-value 'date 0))
+  (define user     (get-value 'login))
+  (define pwd      (get-value 'password))
+  (define version  (get-value 'version))
+  (define action   (get-value 'action))
+  (write
+   (list date user pwd version action))
+  (newline)
+  
+  (define (fail . msgs)
+    (list
+     'Error:
+     (apply string-append (map ~a msgs))
+     ))
+  
+  (define response 
+    (cond [(eq? action 'newuser) 
+           (fail "Adding a user can only be done through the web interface.")]
+          [(and (equal? action "getsalt") user)
+           (or (db:get-salt user)
+               (fail "Could not retrieve salt for user " user))]
+          [(and action user pwd)
+           (if (not (db:verify-user user pwd))
+               (fail "Could not verify user identity for user " user)
+               (case action
+                 [("getplayers")
+                  (db:get-players)]
+                 [("newgame")
+                  (define user1 (get-value 'username1))
+                  (db:create-game user user1 (get-value 'username2)
+                                  (get-value 'size) (get-value 'game) user1)]
+                 [("getgame")
+                  (db:get-game (get-value 'gameid))]
+                 [("updategame")
+                  (define game (get-value 'gameid))
+                  (define ply (get-value 'ply))
+                  (update-game game ply)
+                  "Ok"]
+                 [("listgames")
+                  (db:get-game-list user)]
+                 [("listcurrentgames")
+                  (db:get-current-game-list user)]
+                 [("checkauth") "Ok"]
+                 [else (fail "bad request (auth Ok)")]))]
+          [else (fail "bad request")]
+          ))
+  (displayln "Response:")
+  (write response)
+  (response/xexpr (~v response)))
+
+(serve/servlet start
+               #:command-line? #t
+               #:listen-ip #f ; listen to every-one
+               ;#:port 8080
+               #:servlet-path "/client-request/1.6"
+               )
+
+;; test with:
+;; curl 'http://localhost:8000/do?a=b'
+
+

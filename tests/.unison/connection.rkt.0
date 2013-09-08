@@ -1,0 +1,15 @@
+#lang racket
+
+(require "../connection.rkt")
+
+
+;; *** On towers-game.net ***
+; Si changé, ne pas oublier de modifier le .htaccess sur le serveur !!
+(set-debug #t)
+
+(game-server-address "www.towers-game.net")
+(game-root-path "/client-request/")
+(current-server-version "1.5")
+(set-login-password "plip" "plop")
+(get-players)
+(get-current-game-list)

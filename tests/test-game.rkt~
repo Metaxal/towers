@@ -1,0 +1,18 @@
+#lang racket
+(module+ test
+  (require rackunit
+           "player.rkt")
+  (define g1 (list-game->game '("1.54" () 6 "plip" "plop" "Human" "Human" (((move 2 4 2 3 1) (move 1 4 1 3 1)) ((move 2 0 3 0 1) (move 1 0 1 1 1)) ((move 2 5 3 5 1) (move 2 3 1 3 1)) ((move 3 0 4 0 1) (move 2 1 2 2 1) (move 0 1 0 2 1)) ((move 3 5 4 5 1) (move 0 4 0 2 1)) ((move 1 1 1 3 2)) ((move 4 5 5 5 1) (move 0 2 2 2 1) (move 1 5 0 5 1)) ((move 4 0 5 0 1) (move 3 1 3 2 1) (move 3 2 2 2 1) (move 0 0 1 0 1)) ((move 3 4 3 5 1) (move 3 5 5 5 1) (move 4 4 4 5 1) end) ((move 5 1 5 4 1) (move 5 0 4 0 1) (move 1 0 2 0 1)) ((move 4 5 4 1 1) (import 1) (move 5 5 5 4 1)) ((move 2 0 2 1 1) (move 2 1 4 1 1) (move 4 0 3 0 1) (move 2 2 3 2 1)) (resign)))))
+  (send g1 replay-game)
+  (send g1 display-text)
+  
+  (define g (new game% [nb-cells 5] [player1-class "Human"] [player2-class "Human"]
+                 [player1-name "Moi"] [player2-name "Toi"]))
+  (send g display-text)
+  (define mv1 '(move 0 3 0 2 #f))
+  (check-equal? (send g play-move mv1 #:test? #t) 1)
+  (check-not-fail (send g play-move mv1))
+  (check-false (send g play-move mv1 #:test? #t))
+  (send g play-move mv1)
+  (send g display-text)
+  )

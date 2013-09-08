@@ -1,0 +1,18 @@
+#lang racket/base
+;;; Copyright (C) Laurent Orseau, 2010-2013
+;;; GNU General Public Licence 3 (http://www.gnu.org/licenses/gpl.html)
+
+(provide (all-defined-out))
+
+(require (prefix-in network: "connection.rkt")
+         bazaar/string
+         racket/class
+         racket/tcp
+         )
+
+(define current-version  "1.54")
+(define game-min-version "1.50") ; games below this number cannot be read
+
+;; Comparison of 2 users
+;; Case insentitive, + type check (string?)
+(define user=? string?-ci=?)

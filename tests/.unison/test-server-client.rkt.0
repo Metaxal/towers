@@ -1,0 +1,53 @@
+#lang racket
+(require (prefix-in db: towers-server/db)
+         towers-server/server
+         towers-lib/preferences
+         towers-lib/connection
+         towers-lib/base ; required to read the preferences
+         (only-in towers-server/db 
+                  set-auto-connection 
+                  get-connection
+                  )
+         db
+         bazaar/rackunit)
+
+(define db-name "towers_test")
+
+(read-preferences)
+(set-pref 'database #f) ; the database may not exist yet.
+(set-pref 'server-port "8080")
+(game-server-port "8080")
+(db:set-auto-connection)
+
+(db:create-database db-name #:exists 'drop)
+(set-pref 'database db-name)
+(db:select-database db-name)
+(db:create-towers-tables)
+
+;; Reset the connection, with the newly created database.
+;; This is important because the server uses a connection pool,
+;; with the default arguments for database, which (select-database may not always affect).
+(db:set-connection 
+ (get-pref 'mysql-user) (get-pref 'mysql-password)
+ db-name
+ #:notice-handler (λ(a b)(list a b))#;'error)
+
+
+;(set-auto-connection)
+;(set! cnx (get-connection))
+
+(displayln "Starting server.")
+; Do not init server, because we want to use the bd settings defined above
+(thread (λ()(start-server #:read-preferences #f #:db-auto-connect #f)))
+(sleep 3)
+(displayln "Server started (hopefully).")
+
+(check-not-fail (create-user "plip" "plop" "plip@plop.com"))
+(check-not-fail (set-login-password "plip" "plop"))
+(check-not-fail (check-authentication))
+; create user plop with pwd plip
+(check-not-fail (create-user "plap" "plup" "plap@plup.com"))
+; duplicate identifier test
+(check-fail (create-user "plap" "plup" "plap@plup.com"))
+(check-not-fail (set-login-password "plap" "plup"))
+(check-not-fail (check-authentication))

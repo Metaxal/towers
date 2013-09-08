@@ -1,0 +1,31 @@
+#lang racket/base
+;;; Copyright (C) Laurent Orseau, 2010-2013
+;;; GNU General Public Licence 3 (http://www.gnu.org/licenses/gpl.html)
+
+(provide (all-defined-out))
+
+(require (prefix-in network: "connection.rkt")
+         bazaar/string
+         racket/class
+         racket/tcp
+         )
+
+(define current-version  "1.54")
+(define game-min-version "1.50") ; games below this number cannot be read
+(define server-version   "1.5"); Si changé, ne pas oublier de modifier le .htaccess sur le serveur !
+
+; Network settings
+#| Online |#
+(network:game-server-address "www.towers-game.net")
+(network:game-root-path "/client-request/")
+(network:current-server-version server-version) ; uses this as the page name!
+;|#
+#| Localhost | #
+(network:game-server-address "localhost")
+(network:game-root-path "/server/")
+(network:current-server-version "do.php")
+;|#
+
+;; Comparison of 2 logins
+;; Case insentitive, + type check (string?)
+(define login=? string?-ci=?)

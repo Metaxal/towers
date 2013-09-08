@@ -1,0 +1,3 @@
+Using GIMP,
+use the Lava effect to create a marble style
+To have the inverted ones, use "invert color value" instead of "invert color"

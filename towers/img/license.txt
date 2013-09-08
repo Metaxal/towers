@@ -1,0 +1,6 @@
+All these icons are released under the Lesser GNU General Public License.
+
+It is based mainly on the Crystal Clear Project: http://commons.wikimedia.org/wiki/Crystal_Clear
+Original Icons by Everaldo Coelho: http://www.everaldo.com/crystal/
+
+Modifications by Laurent Orseau.

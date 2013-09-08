@@ -1,0 +1,469 @@
+#lang racket/base
+;;; Copyright (C) Laurent Orseau, 2010-2013
+;;; GNU General Public Licence 3 (http://www.gnu.org/licenses/gpl.html)
+
+(provide player-alpha-beta%
+         player-ai-base%)
+
+(require "player.rkt"
+         bazaar/matrix
+         bazaar/getter-setter
+         bazaar/mutation
+         bazaar/list
+         racket/class 
+         racket/match
+         racket/list
+         racket/pretty
+         )
+
+#| *** AI ***
+Alpha-beta really seems out of usability, because of the complexity of the game.
+(or maybe for 5x5 ? Not even sure...)
+
+Probably the best first bet would be an MCTS (Monte-Carlo Tree Search)
+with UCT (Upper confidence Tree(?)) for example, like in Go.
+But is seems possible to define a heuristic function like in Chess,
+so maybe a mix between UCT and A* can provide interesting results.
+
+http://hal.inria.fr/inria-00380539/en/
+but see:
+http://creativenamehere.co.cc/upper-confidence-trees-uct-inherently-flawed/
+
+|#
+
+
+#| Ideas
+
+- this should make things go a lot faster:
+for each movable cell, find all possible destination cells (move, raise, attack).
+Then use the found paths as one branch of the tree.
+Nb of moves per simulation should be (much) higher,
+but number of simulations should be lower.
+Well... it may be a bit faster for moves that use many move points,
+but it's the same as before for all that take only 1 point
+(because for such a move, all the process must be done again).
+For the very first "move" on a 10x10, there is at least 
+185*2+3*8+4=398 different configurations (for moving only one pawn).
+Approximately the same number as Go, but now we must do the same
+for the remaing points (which depends on the chosen move).
+Using this method should still gain time, because we remove all duplicate paths
+that go to the same destination cell (which path is chosen is not important
+when moving only one cell).
+
+
+- we could do only one alpha-beta search per turn,
+since we have the whole sequence
+(to the cost of losing some better options, but should not be that much a problem,
+since the first played move has much effect on the next ones?)
+Would be muche faster
+
+- pondérer une valeur min-max par sa longueur
+
+- take range into account to  filter possible moves
+
+- parmi toutes les actions possibles, 
+choisir celle qui a mené le plus de fois en proportion à des victoires où des valeurs de plateau bonnes.
+-> faire la somme cumulée des valeurs des plateaux pour chaque coup.
+Choisir l'action qui maximise ca.
+Mais vu le nombre de premieres actions possibles, ca risque de faire un bon paquet...
+
+|#
+
+#| Strange behavior
+
+Suppose the search depth is 2,
+and the min-max player has 4 move points, 
+which is barely sufficient to reach some opponent pawn in straight line.
+Instead of going straight to that latter pawn in one move,
+then simulate the opponent's move,
+ it prefers to use its 2 depth search on its own turn, 
+because simulating the opponent's turn will obviously lead to poorer performance.
+-> this model is wrong!
+It is (theoretically) necessary to compare board evaluations of the same kind!
+So we must search to the same depth for each move,
+which makes things more complicated...
+
+
+Idea : 
+any pawn moves only to once to another place on the board per turn,
+and then does not need to move again?
+whatever path is taken to go to that cell?
+->reduces the number of possible moves?
+This is not true for the master, which can import while/after moving.
+
+For alpha-beta, once a pawn has moved, do not consider it again for moving (except master).
+
+
+|# 
+
+(define player-ai-base%
+  (class player% (super-new)
+    
+    (inherit-field game master-pos num-pawns-reserve opponent move-points)
+    (inherit current-player? get-cell 
+             pos-num-pawns
+             cell->relative-cell
+             cell-num-pawns
+             must-end-turn?
+             can-i-move?
+             do-end-turn
+             on-play-move
+             play-move
+             play-move*
+             say
+             )
+
+    (define/public (move-cost move)
+      (match move
+        [(list 'import n)
+         n]
+        [(or 'end #f 'resign)
+         move-points]
+        [(list 'move xi yi xf yf n)
+         (* (or n (cell-num-pawns xi yi)) 
+            (+ (abs (- xf xi)) (abs (- yf yi))))]
+        ))
+
+    (define/public (find-my-cells)
+      (let ([my-cells '()]
+            [opp-cells '()]
+            [free-cells '()]
+            )
+        (matrix-for-each
+         (send game get-mat)
+         (λ(i j c)
+           (let ([c (cell->relative-cell c)])
+             (cond [(> c 0)
+                    (cons! (list j i) my-cells)]
+                   [(< c 0)
+                    (cons! (list j i) opp-cells)]
+                   [else (cons! (list j i) free-cells)]))))
+        ;(printf "cells: ~a\n~a\n~a\n" my-cells opp-cells free-cells)
+        (values my-cells opp-cells free-cells)))
+    
+    ;; Returns #f if the move is not possible,
+    ;; otherwise returns the move
+    (define/public (can-move? ci-pos cf-pos [n #f])
+      ;(printf "can-move: ~a ~a ~a\n" ci-pos cf-pos n)
+      (and ci-pos cf-pos
+           (let-values ([(cxi cyi) (apply values ci-pos)]
+                        [(cxf cyf) (apply values cf-pos)])
+             (and (send game move cxi cyi cxf cyf n #:test? #t)
+                  (list 'move cxi cyi cxf cyf n)))))
+    
+    (define/public (master-height)
+      (send game cell-num-pawns (get-cell (first master-pos) (second master-pos))))
+          
+    (define/public (can-move-out-of-master? cf-pos)
+      (and (> (master-height) 1) ; Master is a Tower
+           (can-move? master-pos cf-pos 1)))
+    
+    (define/public (can-raise-master? ci-pos)
+      (and (can-move? ci-pos master-pos)))
+    
+    (define/public (can-import?)
+      (and (send game can-import?)
+           (list 'import 1)))
+    
+
+    (define/public (find-pos-possible-moves pos [tower-out #f])
+      (let-values ([(cx cy) (apply values pos)])
+        (let* ([height (pos-num-pawns pos)]
+               [height (min (or tower-out height height))]
+               [dist-max (quotient move-points height)]
+               [last-cell (- (send game get-nb-cells) 1)]
+               )
+        (filter 
+         (λ(x)x)
+         (append
+          (for/list ([i (in-range cx last-cell)]
+                     [n (in-range dist-max)]
+                     )
+            (can-move? pos (list (+ i 1) cy) height)
+            )
+          (for/list ([i (in-range cx 0 -1)]
+                     [n (in-range dist-max)])
+            (can-move? pos (list (- i 1) cy) height))
+          (for/list ([j (in-range cy last-cell)]
+                     [n (in-range dist-max)])
+            (can-move? pos (list cx (+ j 1)) height))
+          (for/list ([j (in-range cy 0 -1)]
+                     [n (in-range dist-max)])
+            (can-move? pos (list cx (- j 1)) height))
+          )))))
+    
+    (define/public (find-all-possible-moves)
+      (let*-values ([(my-cells opp-cells free-cells) (find-my-cells)])
+        (append 
+         (if (and (> (master-height) 1) (not (send game locked-cell? master-pos)))
+             (find-pos-possible-moves master-pos 1)
+             '())
+         (append-map (λ(c)(find-pos-possible-moves c)) my-cells)
+         (if (can-import?) (list '(import 1)) '())
+         (list 'end)
+         )))
+      
+           
+    
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;; Random move selection ;;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    
+    (define (choose-cell cell-list)
+      (and (not (empty? cell-list))
+           (choose cell-list)))
+            
+    ;; Returns one possible move 
+    ;; Tries to keep correct proportions between the different strategies
+    ;; (attack, defense, import, etc.)
+    ;; Probably too simple.
+    (define/public (find-a-move)
+      (let ([moves (find-all-possible-moves)])
+        (and (not (empty? moves))
+             (choose moves))))
+          
+    ;; Does NOT consider draw games.
+    (define/public (board-value)
+      (+ num-pawns-reserve
+         (- (send opponent get-num-pawns-reserve))
+         (for/fold ([score 0]) 
+                   ([(y x c) (send game get-mat)])
+           (+ score (cell->relative-cell c)))))
+
+    ))
+    
+(define-player-class player-alpha-beta% "Alpha Beta - no GUI"
+  (class player-ai-base%
+    (super-new)
+    
+    (inherit-field opponent game master-pos)
+    (inherit say find-a-move play-move*
+             ;find-pos-possible-moves
+             find-all-possible-moves
+             update-view
+             )
+    
+    (field [depth-max 3]
+           [game-simu-vect #f]
+           [nb-move-total 1]
+           )
+               
+    (getter nb-move-total)
+       
+    ;; Copies the initial simulation game,
+    ;; giving the correct depth to each following simulation
+    (define (init-simu g depth)
+      (let ([pl1 (send g get-player1)]
+            [pl2 (send g get-player2)])
+        (send* pl1 
+          (set-depth          depth)
+          (set-depth-max      depth-max)
+          (set-game-simu-vect game-simu-vect))
+        (send* pl2
+          (set-depth          depth)
+          (set-depth-max      depth-max)
+          (set-game-simu-vect game-simu-vect))
+        ))
+    
+    ;; Builds the vector of simulations
+    ;; and initialiazes the simulations
+    (define (make-game-simu-vect)
+      (let ([game-simu (send game copy 
+                              (new player-alpha-beta-simu% [name "pl1"])
+                              (new player-alpha-beta-simu% [name "pl2"])
+                              )])
+        (set! game-simu-vect (build-vector (add1 depth-max) (λ(n)(send game-simu copy))))
+        (for ([g (in-vector game-simu-vect)]
+              [depth (in-naturals)])
+          (init-simu g depth))
+        ))
+    
+    (define/public (stop-search)
+      (for ([g (in-vector game-simu-vect)])
+        (send (send g get-player1) set-stop-search? #t)
+        (send (send g get-player2) set-stop-search? #t)))
+      
+    (define nb-move-remaining (λ()(say "in get-nb-move-remaining (!)")0))
+    (define/public (get-nb-move-remaining)
+      (nb-move-remaining))
+
+    (define/override (on-play-move)
+      (make-game-simu-vect)
+      (let* ([game-simu (vector-ref game-simu-vect 0)]
+             [me-simu   (send game-simu get-current-player)]
+             [opp-simu  (send me-simu   get-opponent)]
+             [all-moves (find-all-possible-moves)]
+             )
+        (set! nb-move-total (length all-moves))
+        (set! nb-move-remaining (λ()(send me-simu get-nb-move-remaining)))
+        (say "All possible moves:")
+        (pretty-print all-moves)
+        (time 
+         ;(send me-simu on-play-move*)
+         (send me-simu on-play-move)
+         )
+        ; this develops the whole min-max game
+        ; Then get the move and the value:
+        (let ([move (send me-simu get-min-max-move)]
+              [val  (send me-simu get-min-max-value)])
+          (say (format "move: ~a ; value: ~a" move val))
+          (play-move* move))))
+        
+    ;; clone-mat
+    ;; simul-random-player : 
+    ;; -> cloner le game, lui donner 2 joueurs random-simul, et lancer la partie sur une certaine profondeur
+    ;; puis analyser le plateau
+    
+    ;; faire des coups au hasard et choisir 
+           
+    (define/override (on-end-game winner)
+      (cond [(eq? winner this) (say "Woohoo! I win!")]
+            [(eq? winner 'draw) (say "Maybe you're a valuable opponent. Maybe.")]
+            [else(say "Damned! I lost...")]))
+      
+    ))
+
+;; For beam search
+#;(define-player-class player-ai1-simu% "AI-1 simulation"
+  (class player-ai1-base% (super-new)
+    
+    (init-field [depth 10000])
+    
+    (getter/setter depth)
+    
+    (inherit-field name move-points num-pawns-reserve opponent game master-pos)
+    (inherit say 
+             play-move* find-a-move
+             )
+    
+    (define/override (on-play-move)
+      (when (> depth 0)
+        (-- depth)
+        (play-move* (find-a-move))))
+      
+    (define/override (on-end-game winner)
+      (when (eq? winner this)
+        (say "I win")))
+
+    
+    ))
+
+(define-player-class player-alpha-beta-simu% "AI Alpha-Beta simu"
+  (class player-ai-base% (super-new)
+    
+    (init-field [depth #f]
+                [depth-max #f]
+                [game-simu-vect #f] ; just a pointer to the vector defined by the player-alpha-beta%
+                [alpha -inf.0]
+                [beta  +inf.0]
+                [stop-search? #f]
+                [min-max-value #f]
+                [min-max-move #f]
+                [nb-move-remaining 0]
+                )
+    
+    (setter min-max-value)
+    (getter/setter depth depth-max game-simu-vect
+                   nb-move-remaining
+                   min-max-move
+                   alpha beta
+                   stop-search?
+                   )
+    
+    (inherit-field name move-points num-pawns-reserve opponent game master-pos)
+    (inherit play-move* ;find-a-move
+             cell->relative-cell
+             move-cost
+             find-all-possible-moves
+             )
+    
+    (define/public (get-min-max-value)
+      (or min-max-value
+          (begin (set! min-max-value (board-value))
+                 (set! min-max-move 'end)
+                 min-max-value)))
+    
+    ;(define/override (copy-init g cpl opp)
+    ;  (super copy-init g cpl opp)
+    ;  )
+    
+    (define/override (say str)
+      (display (list->string (build-list depth (λ _ #\space))))
+      (super say str)
+      )
+    
+    ;; Does not play only one move,
+    ;; Plays all the possible moves,
+    ;; and returns the value of the best/worst one
+    (define/override (on-play-move)
+      (if (or (>= depth depth-max) stop-search?)
+          ;(begin
+          (set! min-max-value (board-value)) ; and don't play
+          ; (set! min-max-move #f))
+          (let ([top-player? (= depth 0)]
+                [all-moves (find-all-possible-moves)]
+                [game-simu (vector-ref game-simu-vect (+ 1 depth))]) ; take the next game
+            (let loop ([moves (if top-player?
+                                  ; shuffle (to avoid playing always the same):
+                                  (sort all-moves < #:key (λ _ (random)) #:cache-keys? #t)
+                                  ; don't care:
+                                  all-moves)]
+                       [best-val #f]
+                       [best-move #f])
+              (when top-player?
+                (set! nb-move-remaining (length moves)) 
+                (say (format "Remains:~a val:~a move:~a" (length moves) best-val best-move)))
+              (if (empty? moves)
+                  (begin
+                    (set! min-max-value (or best-val (board-value)))
+                    (set! min-max-move  (or best-move 'end)))
+                  (let ([mv (first moves)])
+                    (send game copy-to! game-simu) ; copy, but no memory allocated (normally)
+                    (let* ([me-simu  (send game-simu get-current-player)]
+                           [opp-simu (send me-simu   get-opponent)]
+                           [remaining-points (- move-points (move-cost mv))]
+                           [play-again?      (> remaining-points 0)]
+                           [next-player-simu ; the player from wich we will have to take the min-max value (it can be either)
+                            (if play-again? me-simu opp-simu)]
+                           )
+                      (send me-simu set-alpha alpha)
+                      (send me-simu set-beta  beta)
+                      (send opp-simu set-alpha (- beta))
+                      (send opp-simu set-beta  (- alpha))
+                      
+                      (send me-simu play-move* mv)
+                      ; this may play all the following moves
+                      ; or switch to opp-simu (and do it again)
+                      
+
+                      (let* ([v ((if play-again? + -) ; negamax if next-player=opponent
+                                 (send next-player-simu get-min-max-value))] 
+                             [best-move (or best-move mv)] ; if not set yet
+                             [best-val  (or best-val v)])
+                        ;(send me-simu say (format "value: ~a" v))
+                        (when (> v alpha)
+                          (set! alpha v))
+                        (cond [(> alpha beta) (loop '() v mv)] ; cut
+                              [(> v best-val) (loop (cdr moves) v mv)] ; change best one
+                              [else (loop (cdr moves) best-val best-move)]))))))) ; keep current one
+          ))
+      
+    (define/override (on-end-game winner)
+      (set! min-max-value (board-value)))
+      ;(when (eq? winner this)
+      ;  (say "I win")))
+       
+    (define/override (board-value)
+      (let ([winner (send game get-winner)])
+        (cond [(eq? winner 'draw) 0]
+              [(eq? winner this) (- 1000 depth)] ; win as soon as possible
+              [winner (+ -1000 depth)] ; lose as late as possible
+              [else
+               (+ num-pawns-reserve
+                  (- (send opponent get-num-pawns-reserve))
+                  (for/fold ([score 0]) 
+                    ([(y x c) (send game get-mat)])
+                    (+ score (cell->relative-cell c))))])))
+
+
+    ))

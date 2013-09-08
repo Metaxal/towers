@@ -1,0 +1,9 @@
+#lang racket
+
+(require net/url)
+
+(port->list
+ read
+ (get-pure-port
+  (string->url
+   "http://localhost:8000/do?a=auie")))

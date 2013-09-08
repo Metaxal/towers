@@ -1,0 +1,262 @@
+#lang scribble/base
+
+
+@(require scribble/manual
+          racket/runtime-path)
+
+@(define towers @bold{Towers})
+
+@(define img-set "set2")
+@(define (img-name->image name)
+   (image (build-path 'up "img" name)))
+@(define (img-name-set2->image name)
+   (image (build-path 'up "img" img-set name)))
+
+@title{@towers Rules}
+@;author+email["Laurent Orseau" "laurent.orseau@gmail.com" #:obfuscate? #t]
+
+@towers is a turn-by-turn, two-player board game like Chess, Draughts, and Go.
+As such it is a strategy game, 
+and incorporates a resource management part that makes it unique.
+
+The size of the board ranges from 5x5 to 10x10.
+
+@;(define-runtime-path img-tower-one "../img/monuments/tower-one.png")
+@;(image img-tower-one)
+@;(img-name->image "player-one.png")
+
+@(img-name->image "screenshot-5x5-annnotated.png")
+
+
+@section{Rules}
+
+The goal is to capture the opponent's master pawn.
+
+Each pawn can move on the 8 adjacent cells (or less if it is on a border of the board).
+
+@;{It is not allowed to undo what has been done, 
+even in the middle of one's turn.
+Reason:
+   Think before you play...
+;}
+
+ @subsection{Reserve pawns and move points}
+ 
+Each player has a number of move points per turn: 
+6 on a 10x10 board, 5 on 9x9, ... and 1 on 5x5.
+@;{Reason:
+   6 on 10x10 means that a pawn cannot at the very beginning capture an opponent's pawn.
+   (first ply is capture-less)
+;}
+
+During a single turn, each player can make as many moves as it has move points.
+It is up to the player to decide how these points are used.
+A single pawn can be moved several times in the same turn.
+
+Each player has in fact as many move points as it has pawns in its reserve.
+Reserve pawns are placed outside of the board.
+Pawns can be imported from the reserve to the board and vice-versa (see @secref{import-export}).
+
+At the beginning of each turn, all the reserve pawns should be placed on the left.
+Each time a move point is used, one reserve pawn should be 
+moved from the left side (yet unused reserve pawn side) 
+to the right side (used reserve pawn side).
+
+When the player has used all its move points in the current turn, 
+its turn ends and its opponent's turn begins.
+
+The player can also decide to end its turn prematurely by "passing" ;
+it should then say "I pass" aloud.
+
+ @subsection{Building an moving towers}
+
+A pawn is a tower of height 1.
+
+If a tower of height h1 is moved onto another tower of height h2 of the same player,
+this builds a tower of height h1+h2.
+For example, moving a pawn on another pawn builds a tower of height 2.
+
+Moving a tower requires as many move points as the height of the tower.
+For example, a tower of height 3 requires 6 move points to move by 2 cells.
+
+A pawn can not move out of a tower, except if it is the master tower
+(see @secref{import-export}).
+@;{Reason:
+   avoids having high (invicible) towers in the ennemy's line,
+   which pawns still are very close to the opponent's master.
+   Towers remain towers, and the player must think twice before building one.
+   However, the master can still do that, so that importing pawns is possible.
+ ;}
+
+ @subsection{Attacking the opponent's pawns and towers}
+ 
+A tower T1 can be moved onto an opponent's tower T2, 
+thus attacking it,
+only if T1 is at least as high as T2.
+Then T2 is captured and removed from the board (it does not go to the reserve).
+@;{Reason:
+   at least as high (not need to be higher):
+   ?
+;}
+
+There is one notable exception to the removal rule:
+If a tower of height h is captured by @emph{the master} pawn (or tower), 
+then the master tower is heighten by h,
+i.e. @emph{the captured pawns are turned into allies!}
+@;{Reason:
+   bias toward using the master
+   + do not get too close to the opponent's master!
+   + fits well with the master definition
+   ;}
+
+The game ends when the opponent's master pawn is captured.
+
+@bold{Important:} 
+Once a pawn or tower has captured an opponent's pawn or tower,
+no move can be initiated from this cell, 
+i.e. the tower cannot move until next turn,
+even if it is the master pawn.
+The cell on which is tower is locked is said to be locked, and is indicated by:
+@(img-name-set2->image "locked-cell.png")
+@;{Reason:
+   avoids the capture several pawns with the same one in one ply.
+   avoids piercing through the opponent's defense line.
+   -> makes the game more interesting.
+   makes defense more feasible, and not always ripped off in one ply.
+   ;}
+It is however still possible to heighten the tower with more pawns.
+@;{Reason:
+   to strengthen the position (defense)
+   ;}
+ 
+ @subsection[#:tag "import-export"]{Importing and exporting pawns}
+
+On-board pawns can be exported to the reserve:
+at the end of the player's turn, any pawn that is on the master pawn is
+returned to the reserve.
+
+Reserve pawns can also be imported on the board, 
+simply by placing them on the master pawn.
+Only yet unused reserve pawns can be imported on the board.
+Once on the master pawn, they can be move out of the master tower.
+
+For example, player A has 2 remaining move points.
+It takes one of the points/reserve-pawns to place it on the master pawn.
+It now has a tower master of height 2, and 1 remaining move point.
+Player A should not import the last move point/reserve-pawn on the master,
+because its turn would be over, and both imported pawns would then return to the reserve.
+So A needs to move the imported pawn out of the master, 
+thus using the last move point.
+
+(pictures ?!)
+ 
+Remark that it is thus not possible for a player to have 0 pawns in its reserve,
+because if there remains only one pawn in the reserve, 
+importing it to the board  requires at least two move points.
+
+ @subsection{Draw game}
+ 
+The game is a draw when each player passes one after the other,
+or when two successive board positions have already been played exactly the same before.
+
+At the end of a turn, 
+if the configuration of the board is the same 
+as the one at the beginning of the same turn, 
+it is considered a "pass".
+
+@section{How to Play}
+
+To move one pawn or one tower, simply left-click first on it 
+then left-click on the target adjacent cell.
+
+To move only one pawn out of a tower, select the tower (left-click),
+then right-click on an adjacent cell.
+
+To import a pawn from the reserve onto the board, right-click on the master.
+It appears on the master.
+
+To export a pawn to the reserve, 
+you must move one in-game pawn on to the master pawn.
+At the end of the turn, it is added to the reserve.
+
+@section{Tips}
+
+Towers resist more to attacks, but are also more difficult to move.
+
+Keep in mind that a single opponent pawn can move by several cells, 
+and may not be very far away from your master pawn!
+
+
+The master pawn is special.
+It can temporarily become a tower and then return as a pawn at the end of the turn.
+For example, if a player has 5 move points, it can import 2 pawns onto the master
+and attack an opponent's tower of max-size 3 if it is next to it.
+At the end of the turn, the imported pawns automatically return to the reserve.
+
+One move point is sometimes sufficient to add several pawns to the reserve:
+If the master pawn moves onto a tower of the player, 
+then the entire tower returns to the reserve at the end of the turn.
+
+Though be sure to protect the master pawn because at the end of the turn it returns
+to a defense-less pawn.
+
+Also make sure your opponent cannot safely capture some pawn with its master,
+otherwise he/she would increase its reserve!
+In general, you should not have a lonely pawn that is not "covered" by another one.
+
+@;{
+@section{Complexity of the Game}
+
+The complexity of a board game can be roughly computed
+by approximating the number of moves one player can do at each turn.
+
+For Chess, the average number of moves per turn is considered to be
+approximately 40 (37).
+For Go, it is at worst 19*19=361 and around 100-250 on average.
+
+For a 10x10 @towers game with initially 20 pawns on the board and 6 pawns in the reserve,
+the number of possible moves for the first ply (turn) of the first player 
+is less than (20*8)^6 ~ 16.000.000.000.000 ~ 10^13,
+which is considerably far greater than that of Go!
+It corresponds to approximately 5 plies of Go,
+whereas a ply of Go roughly corresponds only to 1.5 ply of Chess.
+
+At the beginning of the small 5x5 game however, 
+the number of possible moves 
+is less than 8*10 considering that each pawn can move on 8 cells 
+(the actual value is 3*8+5*5+2*3=55).
+But as soon as another pawn gets into the reserve, the number of moves for each
+pawn is multiplied by (less than) 8 for the next turn.
+This is the source of the great complexity of @|towers|.
+
+Even on a 5x5 board, @towers can become quite complex.
+In the worst case, we can keep only the master pawn on the board, 
+all the other pawns being in the reserve.
+Then, the number of possible moves is rougly 8^(2N-1), 
+where 8 is the number of single moves,
+and (2N-1) is the number of successive moves the pawn can do.
+For N=5, this amounts to more than 100.000.000 possible moves, 
+@emph{for a single ply!} 
+(Although this is a somewhat improbable situation.)
+
+The complexity decreases when towers are captured,
+and when towers are formed.
+The complexity generally increases (resp. decreases)
+when pawns are exported to (resp. imported from) the reserve.
+
+It should be noted though that moves are not often commutative in a single ply.
+Breaking this symmetry also "increases" (or rather does not decrease) 
+the complexity compared to situations where moves are commutative 
+(which would be more the case if pawns could get out of @emph{any} tower,
+not just the master: playing p1 then p2 would often be the same as p2 then p1).
+
+;}
+
+@; What about the depth of the games ?
+@; How many moves on average in one game? 
+@; In Go, this can go as far as 361, although it generally is closer 
+@; It seems that the games may not be very deep?
+
+
+
+
