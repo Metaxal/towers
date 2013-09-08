@@ -1,3 +1,3 @@
 #lang setup/infotab
 
-(define deps (list "bazaar"))
+(define deps (list "base" "compatibility-lib" "bazaar"))
