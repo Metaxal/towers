@@ -12,23 +12,16 @@ To authenticate a user, first the salt is requested to the server given a userna
 The password is then encrypted (hashed and salted) on the client before being sent.
 The password thus does NOT travel in plain text.
 
-
-TODO :
-- WRITE THE SPECIFICATIONS OF THE SERVER !
-- the server should notify the players that they can play! (email?)
-
 |#
 
-(provide #|create-game-id get-game-id update-game-id |#
-         init-connection
-         encode-password
-         game-server-address
-         game-server-port
-         game-root-path
+(provide encode-password
+         server-address
+         server-port
+         server-root-path
+         server-version
+         current-user
          set-user-password
          check-authentication
-         current-user
-         current-server-version
          create-user
          get-game-list
          get-current-game-list
@@ -38,8 +31,7 @@ TODO :
          get-players
          )
 
-(require "preferences.rkt"
-         "base.rkt"
+(require "base.rkt"
          bazaar/debug
          racket/list
          racket/class
@@ -51,21 +43,6 @@ TODO :
          net/base64
          file/md5
          )
-
-(define game-server-address     (make-parameter #f))
-(define game-server-port        (make-parameter "80"))
-(define game-root-path          (make-parameter "/"))
-(define current-server-version  (make-parameter "0"))
-(define current-user            (make-parameter #f))
-(define current-password        (make-parameter ""))
-
-(define (init-connection #:read-preferences [read-pref #t])
-  (when read-pref (read-preferences))
-  (game-server-address     (get-pref 'server-address))
-  (game-root-path          (get-pref 'server-root-path))
-  (game-server-port        (get-pref 'server-port))
-  (current-server-version  (get-pref 'server-version)) ; uses this as the page name!
-  )
 
 ;; Generates a new salt,
 ;; but it's not clear that this has the correct cryptographic properties.
@@ -96,13 +73,13 @@ TODO :
     (append other-query
             `((user     . ,(current-user))
               (password . ,(current-password))
-              (version  . ,(current-server-version))
+              (version  . ,(server-version))
               (action   . ,action))))
   (define u
     (url
-     "http" #f (game-server-address) (game-server-port) #t
-     (list (path/param (game-root-path) '()) 
-           (path/param (current-server-version) '()))
+     "http" #f (server-address) (server-port) #t
+     (list (path/param (server-root-path) '()) 
+           (path/param (server-version) '()))
      query
      #f))
   (write (url->string u)) (newline)

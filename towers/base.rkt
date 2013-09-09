@@ -4,7 +4,8 @@
 
 (provide (all-defined-out))
 
-(require bazaar/getter-setter
+(require towers-lib/base
+         bazaar/getter-setter
          bazaar/mutation
          bazaar/preferences
          racket/gui/base
@@ -115,10 +116,8 @@
 ;;; Preferences ;;;
 ;;;;;;;;;;;;;;;;;;;
 
-(define prefs (new preferences% 
-                   [file (make-config-file-path "towers" "prefs")]
-                   [default-preferences
-                     '((auto-update . #t)
-                       (auto-update-notify . #t)
-                       (auto-end-turn . #f)
-                       )]))
+(send* prefs
+  (set 'auto-update         #t #:save? #f)
+  (set 'auto-update-notify  #t #:save? #f)
+  (set 'auto-end-turn       #t #:save? #f))
+

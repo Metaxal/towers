@@ -3,13 +3,15 @@
 ;;; GNU General Public Licence 3 (http://www.gnu.org/licenses/gpl.html)
 
 (require (only-in towers-lib/connection encode-password current-user)
-         towers-lib/preferences
+         towers-lib/base
+         ;towers-lib/preferences
          bazaar/debug
          db/base
          db/mysql
          racket/list
          racket/string
          racket/dict
+         racket/class
          )
 
 (provide get-connection
@@ -58,10 +60,10 @@
 
 ;; Sets the connection from the preference file
 ;; notice-handler: same as for mysql-connect
-(define (set-auto-connection #:read-preferences [read-pref #t]
-                             #:notice-handler [notice-handler void])
-  (when read-pref (read-preferences))
-  (set-connection (get-pref 'mysql-user) (get-pref 'mysql-password) (get-pref 'database)
+(define (set-auto-connection #:notice-handler [notice-handler void])
+  (set-connection (send prefs get 'mysql-user)
+                  (send prefs get 'mysql-password)
+                  (send prefs get 'database)
                   #:notice-handler notice-handler))
 
 (define (disconnection)
@@ -237,8 +239,8 @@
 
 (module+ test
   (require bazaar/rackunit)
-  (read-preferences)
-  (set-pref 'database #f)
+  (load-preferences)
+  (send prefs set 'database #f)
   (set-auto-connection #:read-preferences #f
                        #:notice-handler 'error)
   

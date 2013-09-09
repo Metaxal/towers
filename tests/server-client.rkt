@@ -1,7 +1,7 @@
 #lang racket
 (require (prefix-in db: towers-server/db)
          towers-server/server
-         towers-lib/preferences
+         towers-lib/base
          towers-lib/connection
          towers-lib/game
          (only-in towers-server/db 
@@ -10,35 +10,25 @@
                   )
          bazaar/rackunit)
 
-(define db-name "towers_test")
+(load-preferences "prefs-test.rktd")
+;(send prefs set 'database #f #:save? #f) ; the database may not exist yet.
+;(send prefs set 'server-port "8081")
+(db:set-connection
+ (send prefs get 'mysql-user) (send prefs get 'mysql-password) #f)
 
-(read-preferences)
-(set-pref 'database #f) ; the database may not exist yet.
-(set-pref 'server-port "8081")
-(game-server-port "8081")
-(db:set-auto-connection #:read-preferences #f)
-
-(db:create-database db-name #:exists 'drop)
-(set-pref 'database db-name)
-(db:select-database db-name)
+(db:create-database (send prefs get 'database) #:exists 'drop)
+(db:select-database (send prefs get 'database))
 (db:create-towers-tables)
 
 ;; Reset the connection, with the newly created database.
 ;; This is important because the server uses a connection pool,
 ;; with the default arguments for database, which (select-database may not always affect).
-(db:set-connection 
- (get-pref 'mysql-user) (get-pref 'mysql-password)
- db-name
+(db:set-auto-connection 
  #:notice-handler (λ(a b)(list a b))#;'error)
-
-(init-connection #:read-preferences #f)
-
-;(set-auto-connection)
-;(set! cnx (get-connection))
 
 (displayln "Starting server.")
 ; Do not init server, because we want to use the bd settings defined above
-(thread (λ()(start-server #:read-preferences #f #:db-auto-connect #f)))
+(thread start-server)
 (sleep 3)
 (displayln "Server started (hopefully).")
 

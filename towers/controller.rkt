@@ -4,19 +4,19 @@
 
 (provide (all-defined-out))
 
-(require towers-lib/base
+(require "player-alpha-beta-gui.rkt"
+         "frame.rkt"
+         "base.rkt"
+         "graphics.rkt"
+         towers-lib/base
          towers-lib/game
+         towers-lib/file
+         (prefix-in network: towers-lib/connection)
          ; All player modules must be required for them to appear in the new game dialog
          towers-lib/player-base
          towers-lib/player
          towers-lib/player-ai1
-         towers-lib/file
-         (prefix-in network: towers-lib/connection)
 
-         "player-alpha-beta-gui.rkt"
-         "frame.rkt"
-         "base.rkt"
-         "graphics.rkt"
          bazaar/mutation
          bazaar/gui/board
          bazaar/gui/bitmaps
@@ -39,7 +39,7 @@
   )
 
 (define (send-towers-url sub-url)
-  (send-url (string-append (network:game-server-address) sub-url)))
+  (send-url (string-append (network:server-address) sub-url)))
 
 (define (website-callback)
   (send-towers-url ""))
@@ -441,16 +441,16 @@
   (when (and update-network-game-timer
              network:current-user
              (send frame-games is-shown?)
-             (send prefs get-preference 'auto-update)
+             (send prefs get 'auto-update)
              )
     (update-columns-box-games))
   (when (and network-game-id
-             (send prefs get-preference 'auto-update)
+             (send prefs get 'auto-update)
              (not (user-current-player?))
              (not replaying?))
       (update-network-game)
       (when (and (user-current-player?)
-                 (send prefs get-preference 'auto-update-notify))
+                 (send prefs get 'auto-update-notify))
         (send fb-opponent-has-played show #t)
         )))
 
@@ -464,7 +464,7 @@
 ;;;;;;;;;;;;;;;;;;;
 
 (define (set-auto-end-turn)
-  (auto-end-turn (send prefs get-preference 'auto-end-turn)))
+  (auto-end-turn (send prefs get 'auto-end-turn)))
 
 (define (prefs-cb-dict)
   `((,cb-prefs-auto-update       . auto-update)
@@ -474,14 +474,15 @@
 
 (define (show-preferences-dialog)
   (for ([(cb pref) (in-dict (prefs-cb-dict))])
-    (send cb set-value (send prefs get-preference pref)))
+    (send cb set-value (send prefs get pref)))
   (send dialog-preferences show #t)
   )
 
 (define (preferences-callback)
   ; save preferences from file
   (for ([(cb pref) (in-dict (prefs-cb-dict))])
-    (send prefs set-preference pref (send cb get-value)))
+    (send prefs set pref (send cb get-value)))
+  (send prefs save)
   (set-auto-end-turn)
   (send dialog-preferences show #f)
   )

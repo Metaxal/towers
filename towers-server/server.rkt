@@ -4,7 +4,8 @@
 ;;; GNU General Public Licence 3 (http://www.gnu.org/licenses/gpl.html)
 
 (require (prefix-in db: "db.rkt")
-         towers-lib/preferences
+         ;towers-lib/preferences
+         towers-lib/base
          towers-lib/game
          towers-lib/player
          bazaar/list
@@ -97,21 +98,17 @@
   (write response)(newline)
   (response/xexpr (~v response)))
   
-;; database : (or/c #f string/c)
-(define (start-server #:read-preferences [read-pref #t]
-                      #:db-auto-connect [db-connect #t]
-                      #:database [database #f])
-  (when read-pref  (read-preferences))
-  (when database   (set-pref 'database database))
-  (when db-connect (db:set-auto-connection #:read-preferences #f))
+;; database : (or/c #f string/c). Useful only if db-auto-connect is #t
+(define (start-server #:database [database #f])
+  (when database   (send prefs set 'database database #:save? #f))
   (serve/servlet start
                  ;#:command-line? #t
                  #:launch-browser? #f
                  ;#:connection-close? #t ; ?
                  #:listen-ip #f ; listen to every-one
-                 #:port (get-pref 'server-port)
-                 #:servlet-path (string-append "/" (get-pref 'server-root-path) 
-                                               "/" (get-pref 'server-version))
+                 #:port (server-port)
+                 #:servlet-path (string-append "/" (server-root-path) 
+                                               "/" (server-version))
                  )
   (db:close-connection))
 
@@ -124,5 +121,17 @@
    #:once-any
    [("-p" "--preferences") file
                            "Sets the preference file"
-                           (pref-file file)])
-  (start-server))
+                           (pref-file file)]
+   [("--create-db") "Creates Towers database with empty tables if it does not exist"
+                    (load-preferences)
+                    (db:set-connection (send prefs get 'mysql-user)
+                                       (send prefs get 'mysql-password)
+                                       #f)
+                    (db:create-database (send prefs get 'database))
+                    (db:select-database (send prefs get 'database))
+                    (db:create-towers-tables)
+                    (exit)]
+   #:args ()
+   (load-preferences)
+   (db:set-auto-connection)
+   (start-server)))

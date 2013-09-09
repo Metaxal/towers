@@ -11,7 +11,6 @@
          towers-lib/rules
          towers-lib/game
          towers-lib/connection
-         towers-lib/preferences
          bazaar/gui/board
          bazaar/gui/list-box-sort
          bazaar/gui/msg-error
@@ -196,9 +195,8 @@
  
  )
 
-(define (gui-init #:read-preferences [pref #t])
-  (read-preferences pref)
-  (init-connection)
+(define (gui-init)
+  (load-preferences)
   
   (set-columns-box-games
    (new list-box-sort% [parent frame-games]
@@ -258,7 +256,9 @@
 (define (gui-show)
   (send main-frame show #t))
 
-(define (main cmd)
-  (case cmd
-    [(init) (gui-init)]
-    [(show) (gui-show)]))
+(define (main cmd . args)
+  (apply 
+   (case cmd
+     [(init) gui-init]
+     [(show) gui-show])
+   args))
