@@ -238,7 +238,8 @@
 (define (update-game-buttons)
   (let ([can-play? (gui-can-play?)]
         [must-end? (player-must-end-turn?)])
-    (send button-update-game enable (and network-game-id (not winner) (not replaying?) (not can-play?)))
+    (send button-update-game enable 
+          (and (network-game?) (not winner) (not replaying?) (not can-play?)))
     (send button-end-turn    set-label (cond [(end-turn-draws?) draw-game-bmp]
                                              [must-end? end-turn-salient-bmp]
                                              [else end-turn-bmp]))

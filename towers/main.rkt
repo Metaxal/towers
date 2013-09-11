@@ -4,8 +4,8 @@
 ;;; GNU General Public Licence 3 (http://www.gnu.org/licenses/gpl.html)
 
 (require towers-lib/base
-         bazaar/file
-         (for-syntax bazaar/file)
+         ;bazaar/file
+         ;(for-syntax bazaar/file)
          racket/runtime-path
          (for-syntax racket/base)
          framework/splash

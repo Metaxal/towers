@@ -6,12 +6,13 @@
 
 (require bazaar/string
          bazaar/preferences
+         bazaar/getter-setter
          racket/class
          racket/tcp
          )
 
-(define current-version  "1.54")
-(define game-min-version "1.50") ; games below this number cannot be read
+(define current-version  "2.0")
+(define game-min-version "2.0") ; games below this number cannot be read
 
 ;; Comparison of 2 users
 ;; Case insentitive, + type check (string?)
@@ -53,3 +54,42 @@
     (unless (eq? file #t)
       (pref-file file))
     (send prefs load (pref-file))))
+
+(define/m-setter list-game->game #f) ; stub. Defined in game.rkt, used also in connection.rkt
+
+;=============================;
+;=== Debugging and logging ===;
+;=============================;
+
+(define-logger towers-lib)
+
+; Display the game in the logger
+(define (debug-game g)
+  (log-debug (string-append "\n" (send g ->string))))
+
+(define (loop-receive . receivers)
+  (void 
+   (thread 
+    (λ()(let loop () 
+          (define v (apply sync receivers))
+          (printf "[~a] ~a\n" (vector-ref v 0) (vector-ref v 1)) 
+          (loop))))))
+
+(define no-logger (make-logger 'no-logger))
+(define-syntax-rule (without-logger body ...)
+  (parameterize ([current-logger no-logger])
+    body ...))
+
+;; Returns the result of the expression,
+;; but if the expression is #f, has the side effect 
+;; of logging a message
+(define (or-log expr str . args)
+  (cond [expr]
+        [else
+         (log-message (current-logger)
+                      'debug
+                      (if (null? args)
+                          str
+                          (apply format str args))
+                      #f)
+         #f]))

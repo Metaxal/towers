@@ -65,7 +65,6 @@
         [player1-class "Human"]
         [player2-name "Player two"]
         [player2-class "Human"]
-        [network-game-id #f]
         [rules '()])
    #f))
 
@@ -79,27 +78,26 @@
                                (dict-map rules-check-boxes-dict
                                          (λ(r cb)(and (send cb get-value) r))
                                          ))]
-                [g (new game% [nb-cells nb-cells]
+                [g (new (if net? network-game% game%)
+                        [nb-cells nb-cells]
                         [player1-name  (if first-player? me opponent)]
                         [player1-class (if first-player? me-class opp-class)]
                         [player2-name  (if first-player? opponent me)]
                         [player2-class (if first-player? opp-class me-class)]
-                        [rules rules])]
-                [net-id (and net? (network:new-game g))]
-                )
+                        [rules rules])])
            (when net?
+             (define net-id (network:new-game g))
+             (send g set-network-id net-id)
              (update-columns-box-games))
-           (play-game-gui g net-id)
+           (play-game-gui g)
            (set! current-file #f)
            ))))
 
 ;; Plays a given game and adapts the gui to it.
-(define (play-game-gui game net-id
-                       [nb-plies #f] [nb-moves #f]
+(define (play-game-gui game [nb-plies #f] [nb-moves #f]
                        #:update-rules [update-rules #t]
                        #:replay? [replay? #f])
   (with-error-to-msg-box
-   (send game set-network-game-id net-id)
    (send game replay-game nb-plies nb-moves)
    (set-current-game game)
    (send board set-matrix (send current-game get-mat))
@@ -145,7 +143,7 @@
 (define (undo-callback)
   (when (gui-can-play?)
     (undo)
-    (play-game-gui current-game network-game-id #:update-rules #f)
+    (play-game-gui current-game #:update-rules #f)
     ))
 
 ;;;;;;;;;;;;;;;;;;;;;
@@ -168,7 +166,7 @@
    (define g
      (match (network:get-game game-id)
        [(list version rules nb-cells name1 name2 class1 class2 plies)
-        (new game%
+        (new network-game%
              [version version]
              [rules rules]
              [nb-cells nb-cells]
@@ -177,11 +175,12 @@
              [player1-class (if (current-user? name1) "Human" "Network")]
              [player2-class (if (current-user? name2) "Human" "Network")]
              [plies plies]
+             [network-id game-id]
              )]
        [else (error (format "Cannot read game ~a\n" game-id))
              #f]))
      (when g
-       (play-game-gui g game-id #:update-rules update-rules))))
+       (play-game-gui g #:update-rules update-rules))))
 
 (define (load-game-gui)
   (let ([file (get-file "Load Towers Game"
@@ -189,7 +188,7 @@
                         #f #f "twr" '()
                         '(("Towers Game File" "*.twr")("Any" "*.*")))])
     (when file
-      (play-game-gui (load-game file) #f)
+      (play-game-gui (load-game file))
       )))
 
 ; ***********************************
@@ -429,9 +428,9 @@
        ))
 
 (define (update-network-game)
-  (when (and network-game-id
+  (when (and (network-game?)
              (not (user-current-player?))) ; no need to update if it is our turn to play
-    (load-network-game network-game-id #f)))
+    (load-network-game (send current-game get-network-id) #f)))
 
 (define (timer-update-callback)
   (unless (and main-frame (send main-frame is-shown?))
@@ -444,7 +443,7 @@
              (send prefs get 'auto-update)
              )
     (update-columns-box-games))
-  (when (and network-game-id
+  (when (and (network-game?)
              (send prefs get 'auto-update)
              (not (user-current-player?))
              (not replaying?))

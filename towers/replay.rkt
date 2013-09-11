@@ -2,12 +2,13 @@
 ;;; Copyright (C) Laurent Orseau, 2010-2013
 ;;; GNU General Public Licence 3 (http://www.gnu.org/licenses/gpl.html)
 
-(require towers-lib/base
-         towers-lib/game
-         "base.rkt"
+(require "base.rkt"
          "controller.rkt"
+         towers-lib/base
+         towers-lib/game
          bazaar/define
          racket/gui/base
+         racket/class
          )
 
 ;;;;;;;;;;;;;;;;;
@@ -81,7 +82,7 @@
 
 (define/provide (replay-current-game)
   ; save the full current game in case we replay a part of the current game
-  (play-game-gui current-game network-game-id
+  (play-game-gui current-game 
                  replay-current-ply-num
                  replay-current-move-num
                  #:update-rules #f

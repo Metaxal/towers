@@ -20,6 +20,7 @@
          racket/match
          racket/math
          racket/format
+         racket/string
          )
 
 ;;; This is the core of the game,
@@ -38,12 +39,11 @@
     (super-new)
     
     (init-field nb-cells ; [5 - 10]
-                [network-game-id #f] ; Is a the current game played remotely? (or/c #f number?)
                 [version current-version] ; string
                 [rules '()]
                 [player1 #f] ; player%
                 [player2 #f]
-                [plies '()]
+                [plies '(())] ; plies initialized with an empty first ply
                 )
     ; if player1 or player2 is not provided:
     (init [player1-name #f] ; string
@@ -56,15 +56,17 @@
            [current-player #f]
            [winner #f]
            [locked-cells '()]
-           [replaying? #f]
+           [replaying? (make-parameter #f)]
 
            ;; Number of imported pawns during the current ply
            [nb-imported 0]
            [nb-exported 0]
            )
     
-    (getter/setter mat version rules nb-cells plies network-game-id
-                   replaying? 
+    (define/public (get-replaying?) (replaying?))
+    (define/public (set-replaying? b) (replaying? b))
+    
+    (getter/setter mat version rules nb-cells plies
                    player1 player2 current-player winner
                    )
     
@@ -93,13 +95,7 @@
             (get-name1) (get-name2)
             (send player1 get-class-name) (send player2 get-class-name)
             plies)) ; plies MUST be last (because of server parsing)
-      
-    (define/public (game->string)
-      (format "~s" (game->list)))
     
-    (define/public (last-ply->string)
-      (format "~s" (last plies)))
-
     (define/public (obsolete-client-for-game)
       (version<? current-version version))
 
@@ -127,7 +123,7 @@
       (~a s #:align 'center #:min-width 7))
     
     ; This should be in a towers-txt collection? (not sure, could still be useful for the server)
-    (define/public (display-text)
+    (define/public (->string)
       (define tb 
         (table-framed 
          (cons '< (append
@@ -145,8 +141,10 @@
                             (cell->string row col c))))
           (table-mid-line tb))
          (list (table-last-line tb))))
+      (string-join ll "\n" #:after-last "\n"))
       
-      (for-each displayln ll))
+    (define/public (display-text)
+      (display (->string)))
     
     ;;;;;;;;;;;;;
     ;;; Cells ;;;
@@ -160,6 +158,10 @@
       (cond [(> c 0) player1]
             [(< c 0) player2]
             [else #f]))
+    
+    (define/public (cell-owner? c [player current-player])
+      (eq? (cell-owner c)
+           player))
     
     (define/public (cell-num-pawns c)
       (let ([a (abs c)])
@@ -249,14 +251,10 @@
       (= 0 (send current-player get-move-points)))
     
     ;; WARNING: also used for replaying!
-    ;; so this name is not really accurate
+    ;; so this name is not really accurate.
+    ;; May be overriden in network-game%.
     (define/public (can-current-player-play?)
-      (and (not winner)
-           (or replaying?
-               (not network-game-id)
-               (user=? (send current-player get-name) 
-                        ; Make a player-network% player instead!! (and test if current-player)
-                        (network:current-user))))) 
+      (not winner)) ; Is it really all?
     
     ;; Is player1 the current player?
     (define/public (current-player1?)
@@ -266,35 +264,41 @@
     ;;; Plies ;;;
     ;;;;;;;;;;;;;
     
+    (define/public (last-ply)
+      (last plies) ; Should not fail! (i.e., there should always be one)
+      #;(if (empty? plies)
+          '()
+          (last plies)))
+    
     (define/public (get-current-ply)
-      (last plies))
+      (last-ply))
     
+    ;; Returns whether we have just started a new ply
+    (define/public (new-ply?)
+      (empty? (last-ply)))
+    
+    ;; May be overriden in network-game%
     (define/public (new-ply)
-      (unless (or replaying? (and (not (empty? plies))
-                                  (empty? (get-current-ply))))
+      (when (and (not (replaying?))
+                 (or (empty? plies)
+                     (not (empty? (get-current-ply)))))
         (set! plies (consr '() plies))))
-      
+
     (define/public (replace-current-ply ply)
-      (unless replaying?
-        (let ([rev-plies (reverse plies)])
-          (set! plies (reverse (cons ply (rest rev-plies)))))
-        ))
+      #;(log-debug (list 'replace-current-ply 'plies plies 'last-ply (last-ply) 'new-ply ply))
+      (unless (replaying?)
+        (set! plies (replace-last plies ply))
+        #;(log-debug (list 'new-plies plies))))
     
-    ; The list of moves in the current ply:
     (define (add-move-to-current-ply move)
-      (unless replaying?
-        (replace-current-ply (consr move (last plies)))))
-    
-    (define (update-network-game)
-      (unless replaying?
-      ; If the current game is played remotely and 
-      ; we are not in a replaying phase
-        (when network-game-id
-          ; update the game on the server
-          (network:update-game
-           network-game-id
-           (last-ply->string))
-           )))
+      (log-debug "add-move ~a last-ply: ~a plies: ~a replaying? ~a"
+                 move
+                 (last-ply)
+                 "[skip]"#;plies
+                 (replaying?))
+      (unless (replaying?)
+        (replace-current-ply (consr move (last-ply))))
+      (log-debug "New plies: ~a" plies))
     
     ;;;;;;;;;;;;;;;
     ;;; Actions ;;;
@@ -302,14 +306,12 @@
               
     (define/public (try-switch-player [force #f] [locked '()])
       (let ([switch? (or force winner 
-                         (and replaying?
+                         (and (replaying?)
                               (player-must-end-turn?)))])
         (when switch?
           (export-pawns)
 
           (send current-player end-turn)
-
-          (update-network-game) ; sends the last ply
 
           (new-ply)
 
@@ -320,7 +322,7 @@
           (set! current-player (send current-player get-opponent))
           (send current-player init-turn)
           
-          (unless replaying?
+          (unless (replaying?)
             (if winner
                 (begin (send player1 on-end-game winner)
                        (send player2 on-end-game winner))
@@ -362,8 +364,7 @@
               
               (reduce-move-points n-import)
               ; check if this is the end of the player's turn:
-              (try-switch-player) ; tail position
-              ))))
+              (try-switch-player))))) ; tail position
     
 
 
@@ -390,8 +391,7 @@
     ;; returns #f if the move is invalid, or the number of required 
     ;;   move points if valid.
     (define/public (move xi yi xf yf [move-nb-pawns #f]
-                              #:test? [test? #f]
-                       )
+                              #:test? [test? #f])
       (let* ([ci                    (matrix-ref mat yi xi)]
              [ci-pawns              (cell-num-pawns ci)]
              [move-nb-pawns         (or move-nb-pawns ci-pawns)]
@@ -401,25 +401,36 @@
              [cf                    (matrix-ref mat yf xf)]
              [cf-pawns              (cell-num-pawns cf)]
              [cf-owner              (cell-owner cf)]
-             [raising?              (eq? current-player cf-owner)]
+             [raising?              (cell-owner? cf)]
              [move-normal?          (or raising? (not cf-owner))]
              [move-attack?          (and (not move-normal?) (>= move-nb-pawns cf-pawns))]
              [move?                 (or move-normal? move-attack?)]
              [num-cell-move         (+ (abs (- xi xf)) (abs (- yi yf)))]
              [required-move-points  (* num-cell-move move-nb-pawns)]
-             [can-move? (and (straight-line? xi yi xf yf)
-                             (<= 1 
-                                 required-move-points 
-                                 (send current-player get-move-points))
-                             (free-cell-path? xi yi xf yf)
-                             (not (locked-cell? (list xi yi))) ; the source cell is not locked
-                             (not (locked-cell? (list xf yf))) ; the destination cell is not locked
-                             (or (cell-has-master? ci) (not splitting?) ; no-tower-out
-                                 (specific-rule? 'tower-out))           ; allowed if rule say so
-                             (not (or (and raising? (> move-nb-pawns 1)) ; raise-one
+             [can-move? (and (or-log (cell-owner? ci)
+                                     "Not owner of source cell") ; we must own this cell
+                             (or-log (straight-line? xi yi xf yf)
+                                     "Not moving in straight line")
+                             (or-log (<= 1 
+                                         required-move-points 
+                                         (send current-player get-move-points))
+                                     "Wrong number of move points")
+                             (or-log (free-cell-path? xi yi xf yf)
+                                     "The path to the target is not free")
+                             (or-log (not (locked-cell? (list xi yi)))
+                                     "Source cell is locked")
+                             (or-log (not (locked-cell? (list xf yf)))
+                                     "Target cell is locked")
+                             (or-log (or (cell-has-master? ci) (not splitting?) ; no-tower-out
+                                         (specific-rule? 'tower-out)) ; allowed if specific rule
+                                     "Cannot split a tower")
+                             (or-log (not (and raising? (> move-nb-pawns 1)))
+                                     "Cannot raise tower by more than 1")
                                       ; cannot put the master on a tower.
-                                      (and move-master? raising? (> cf-pawns 1))))
-                             move?)]
+                             (or-log (not (and move-master? raising? (> cf-pawns 1)))
+                                     "Cannot put the master on a 2+ tower")
+                             (or-log move?
+                                     "Cannot move"))]
              )
         (if test? 
             ; if we just want to test if moving is possible, and not do the actual move,
@@ -429,6 +440,7 @@
             ; Below there should be no test for legal moves, only effects.
             (when (and (can-current-player-play?)
                        can-move?
+                       ; /!\ These check-rule?s should be in the test above, not here!
                        ;(check-rule? 'no-tower-out (or (cell-has-master? ci) (not splitting?)))
                        ;(check-rule? 'raise-one (not (or (and raising? (> move-nb-pawns 1))
                        ;                                 ; cannot put the master on a tower.
@@ -459,8 +471,7 @@
                   ; else move-attack:
                   (begin
                     (when (cell-has-master? cf)
-                      (set! winner current-player)
-                      )
+                      (set! winner current-player))
                     (set-cell-has-master?! mat yf xf move-master?)))
               
               (when move-master?
@@ -474,8 +485,8 @@
               ; do we need to lock the destination cell?
               (when (or (specific-rule? 'lock-after-move)
                         (> cf-pawns 0))
-                (add-locked-cell (list xf yf)) ; the tower will not be able to move again this turn
-                )
+                (add-locked-cell (list xf yf))) ; the tower will not be able to move again this turn
+                
              
               (when (and (specific-rule? 'lock-split-tower)
                          splitting?)
@@ -487,18 +498,14 @@
               (reduce-move-points required-move-points)
               
               ; check if this is the end of the player's turn:
-              (try-switch-player) ; tail position
-              ))))
-    
-
+              (try-switch-player)))))  ; tail position
 
     ;; Does ending the game right now draws the game?
     (define/public (end-turn-draws?)
       (let ([rev-plies (reverse plies)])
         (and (empty? (first rev-plies))
              (> (length rev-plies) 1)
-             (equal? (second rev-plies) '(end))
-             )))
+             (equal? (second rev-plies) '(end)))))
     
     (define (try-draw-game)
       (let* ([rev-plies (reverse plies)]
@@ -519,12 +526,10 @@
              ; first, try to end the current turn normally
              (unless (player-must-end-turn?)
                (add-move-to-current-ply 'end)
-               (unless replaying?
+               (unless (replaying?)
                  (try-draw-game)))])
 
-      (try-switch-player #t) ; force end turn ; tail position
-      )
-    
+      (try-switch-player #t)) ; force end turn ; tail position
 
     (define/public (resign #:test? [test? #f])
       (cond [test?]
@@ -545,6 +550,7 @@
     ;;;;;;;;;;;;;;;;;
     
     (define/public (play-move mv #:test? [test? #f])
+      (log-debug "play-move~a: ~a" (if test? " (test)" "") mv)
       (match mv
         [(list 'move xi yi xf yf n)
          (move xi yi xf yf n #:test? test?)]
@@ -562,7 +568,7 @@
     ;; ply: list of moves
     ;; We consider that the ply contains only legal moves!
     ;; n is the number of moves to play in the ply (#f for all)
-    (define (play-ply ply [nb-moves #f])
+    (define/public (play-ply ply [nb-moves #f])
       (for/last ([move ply]
                  [i (in-naturals)]
                  #:when (or (not nb-moves) (< i nb-moves))
@@ -570,36 +576,32 @@
         (play-move move)
         ; return value:
         ; have we finished the ply?
-        (equal? (add1 i) (length ply))
-        )
-      )
+        (equal? (add1 i) (length ply))))
     
     (define/public (replay-game [nb-plies #f] [nb-moves-last #f])
-      (set! replaying? #t) ; to avoid modifying existing plies
       
-      (init-game plies)
-      
-      (for/last ([ply plies]
-                 [i (in-naturals)]
-                 #:when (or (not nb-plies) (< i nb-plies)))
-        (play-ply ply (and (equal? (add1 i) nb-plies) nb-moves-last))
-        )
-      
-      (when (and 
-             ; we go to the last ply:
-             (or (not nb-plies) 
-                 (>= nb-plies (length plies)))
-             ; we go to the last move (of the last ply):
-             (or (not nb-moves-last)
-                 (>= nb-moves-last
-                     (length (list-ref plies
-                                       (sub1 (length plies)))))))
-        ; then we are not replaying anymore:
-        (set! replaying? #f)
-        (try-draw-game)
-              
-        )
-      )
+      (parameterize ([replaying? #t])
+        (init-game plies)
+        
+        (for/last ([ply plies]
+                   [i (in-naturals)]
+                   #:when (or (not nb-plies) (< i nb-plies)))
+          (play-ply ply (and (equal? (add1 i) nb-plies) nb-moves-last))))
+        
+      (if (and 
+           ; we go to the last ply:
+           (or (not nb-plies) 
+               (>= nb-plies (length plies)))
+           ; we go to the last move (of the last ply):
+           (or (not nb-moves-last)
+               (>= nb-moves-last
+                   (length (list-ref plies
+                                     (sub1 (length plies)))))))
+          ; we are at the end of the game
+          (try-draw-game)
+          ; else, not at the end, we are hence replaying
+          (replaying? #t)
+          ))
     
     ;;;;;;;;;;;;;;;;;;;;;;;
     ;;; Reachable cell? ;;;
@@ -862,51 +864,112 @@
              )))
         ))
     
-    (define/public (init-game [plies '()])
-      (init-matrix)
-      (set! winner #f)
-      (set! plies plies)
-      (unless (specific-rule? 'no-first-lock-master)
-        (add-locked-cell (send player1 get-master-pos)))
-      
-      (send player1 init-game nb-cells player2)
-      (send player2 init-game nb-cells player1)
-      
-      (set! current-player player2) ; will be switched 
-      
-      (try-switch-player ; also calls the play method of the current-player
-       #t ; force switch
-       (if (specific-rule? 'no-first-lock-master)
-           '()
-           (list (send (send current-player get-opponent) get-master-pos))))
-      )
+    (define/public (init-game [plies '(())])
+      (parameterize ([replaying? #t])
+        (init-matrix)
+        (set! winner #f)
+        (set! plies plies)
+        (unless (specific-rule? 'no-first-lock-master)
+          (add-locked-cell (send player1 get-master-pos)))
+        
+        (send player1 init-game nb-cells player2)
+        (send player2 init-game nb-cells player1)
+        
+        (set! current-player player2) ; will be switched 
+        
+        (try-switch-player ; also calls the play method of the current-player
+         #t ; force switch
+         (if (specific-rule? 'no-first-lock-master)
+             '()
+             (list (send (send current-player get-opponent) get-master-pos))))))
     
+    (init-game plies)
     (unless no-init?
-      (init-game plies))
+      (replay-game))
       
       ))
 
-(define (list-game->game l [player1-class #f] [player2-class #f])
+(define network-game%
+  (class game%
+    (init-field [network-id #f])
+    
+    (inherit-field replaying? winner current-player)
+    (inherit last-ply)
+    
+    (getter/setter network-id)
+    
+    (define/override (can-current-player-play?)
+      (and (not winner)
+           (or (replaying?)
+               (user=? (send current-player get-name) 
+                       ; Make a player-network% player instead!! (and test if current-player)
+                       (network:current-user)))))
+    
+    ;; Sends the last ply to the server
+    (define/public (update-network-game)
+      (when (and network-id (not (replaying?)))
+        (log-debug "Updating network game")
+        ; update the game on the server
+        (network:update-game network-id (last-ply))))
+    
+    (define/override (new-ply)
+      (update-network-game)
+      (super new-ply))
+    
+    ; Set the id at the end, after update-network-game has been called,
+    ; so that this does not trigger an actual server call during init.
+    (super-new)
+    ))
+
+(set-list-game->game 
+ (λ(l [player1-class #f] [player2-class #f]
+      #:network-game-id [net-id #f])
   (match l
     [(list version rules nb-cells name1 name2 class1 class2 plies)
-     (new game%
-          [version version]
-          [rules rules]
-          [nb-cells nb-cells]
-          [player1-name  name1]
-          [player2-name  name2]
-          [player1-class (or player1-class class1)]
-          [player2-class (or player2-class class2)]
-          [plies plies]
-          )]
-    [else (error "Invalid list game" l)]))
+     (let* ([class1 (or player1-class class1)]
+            [class2 (or player2-class class2)]
+            [g (new (if net-id network-game% game%)
+                    [version        version]
+                    [rules          rules]
+                    [nb-cells       nb-cells]
+                    [player1-name   name1]
+                    [player2-name   name2]
+                    [player1-class  class1]
+                    [player2-class  class2]
+                    [plies          plies])])
+       (when net-id
+         (send g set-network-id net-id))
+       g
+     #;(if net-id
+         (new network-game%
+              [version        version]
+              [rules          rules]
+              [nb-cells       nb-cells]
+              [player1-name   name1]
+              [player2-name   name2]
+              [player1-class  class1]
+              [player2-class  class2]
+              [plies          plies]
+              [network-id     net-id])
+         (new game%
+              [version        version]
+              [rules          rules]
+              [nb-cells       nb-cells]
+              [player1-name   name1]
+              [player2-name   name2]
+              [player1-class  class1]
+              [player2-class  class2]
+              [plies          plies])))]
+    [else (error "Invalid list game" l)])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Fake static class upon current-game ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define current-game #f)
-(m-setter current-game)
+(define/m-setter current-game #f)
+
+(define (network-game?)
+  (is-a? current-game network-game%))
 
 ;; Define syntactic forms
 ;; that always uses the current-game
@@ -932,9 +995,7 @@
    [game-name1      get-name1]
    [game-name2      get-name2]
    [current-name    get-current-name]
-   [network-game-id get-network-game-id]
-   )
-  )
+   ))
 
 (define-syntax-rule (define-game-caller name caller)
   (define-syntax-rule (name arg (... ...))
@@ -968,7 +1029,7 @@
 
 ; Is name the current logged-in player ? (and is it a network game?)
 (define (current-user? name)
-  (and network-game-id
+  (and (network-game?)
        (user=? (network:current-user) name)))
   
 ;; Is the current logged in player (if logged) the current-player?

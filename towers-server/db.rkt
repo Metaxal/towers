@@ -12,6 +12,7 @@
          racket/string
          racket/dict
          racket/class
+         racket/format
          )
 
 (provide get-connection
@@ -87,7 +88,6 @@
 
 (define (verify-user user enc-pwd)
   (define-values (true-pwd salt) (get-pwd+salt user))
-  (write (list enc-pwd true-pwd)) (newline)
   (and true-pwd
        (equal? true-pwd enc-pwd)))
 
@@ -97,7 +97,6 @@
    "SELECT username FROM users WHERE isPlayer=1 AND block = 0"))
 
 (define (create-game user user1 user2 size full-game next-player)
-  (write (list user user1 user2 size full-game next-player)) (newline)
   (define res
     (query
      cnx
@@ -137,12 +136,13 @@
 (define (update-elo user elo)
   (query-exec cnx "UPDATE users set elo=? WHERE username=?" elo user))
 
+;; full-game is a scheme list
 (define (update-game user game-id full-game next-player winner)
   (query-exec 
    cnx
-   "UPDATE games set fullGame=?, nextPlayer=?, winner=?, lastUpdate=?
+   "UPDATE games set fullGame=?, nextPlayer=?, winner=?, lastUpdateDate=?
     WHERE gameID=? AND nextPlayer=?"
-   full-game next-player winner (current-seconds) game-id user)
+   (~s full-game) next-player winner (current-seconds) game-id user)
   )
 
 (define (get-players-stats [start 0] [end 100])

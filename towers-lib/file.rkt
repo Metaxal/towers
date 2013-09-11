@@ -7,36 +7,26 @@
 (require "game.rkt"
          "base.rkt"
          racket/class
+         racket/file
          )
-
-(define (write-game game [out (current-output-port)])
-  (write (send game game->string) out)
-  )
-
-(define (string->game str)
-  (read-game (open-input-string str)))
 
 (define (read-game [in (current-input-port)])
   (list-game->game (read in)))
 
 (define (save-game file game)
-  (with-output-to-file file
-    (λ()(display (send game game->string)))
-    #:exists 'replace
-    ))
+  (write-to-file (send game game->list)
+                 file
+                 #:exists 'replace))
 
 (define (load-game file)
   (and (file-exists? file)
-       (with-input-from-file file
-         (λ()(read-game))
-         )))
+       (list-game->game (file->value file))))
 
 (define (save-current-game file) 
   (save-game file current-game))
 
 (define (load-current-game file)
-  (set-current-game (load-game file))
-  )
+  (set-current-game (load-game file)))
 
 #| Tests | #
 

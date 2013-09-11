@@ -6,8 +6,7 @@
          player?
          player-human%
          player-human?
-         player-test-game%
-         player-test-game?
+         player-server-test%
          find-player-class
          define-player-class
          )
@@ -39,11 +38,9 @@
   (is-a? p player-network%))
 
 ;; A player with nothing in for testing already played games
-(define-player-class player-test-game% "TestGame"
+(define-player-class player-server-test% "ServerTest"
   (class player% (super-new)
     ))
-(define (player-test-game? p)
-  (is-a? p player-test-game%))
 
 #| Tests | #
 (define o (make-object player-human% "moi"))

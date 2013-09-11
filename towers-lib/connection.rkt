@@ -38,6 +38,7 @@ The password thus does NOT travel in plain text.
          racket/port
          racket/match
          racket/contract
+         racket/format
          net/uri-codec
          net/url
          net/base64
@@ -82,11 +83,10 @@ The password thus does NOT travel in plain text.
            (path/param (server-version) '()))
      query
      #f))
-  (write (url->string u)) (newline)
+  (log-debug "Url: ~v" (url->string u))
   (define response 
     (call/input-url u get-pure-port (λ(p)(port->list read p))))
-  (displayln "Received response:")
-  (write response) (newline)
+  (log-debug "Received response:~v" response)
   (match response
     [(list `'(Error ,args ...))
      (apply error "Server error:" args)]
@@ -110,8 +110,11 @@ The password thus does NOT travel in plain text.
   (do-action "listcurrentgames"))
 
 (define/contract (get-game id)
-  (number? . -> . list?)
-  (do-action "getgame" `((gameid . ,(number->string id)))))
+  (number? . -> . (or/c #f (is-a?/c game<%>)))
+  (define lg (do-action "getgame" `((gameid . ,(number->string id)))))
+  #;(log-debug "Received by get-game: ~v" lg)
+  (and lg (list? lg)
+       (list-game->game lg #:network-game-id id)))
 
 (define/contract (new-game g)
   ((is-a?/c game<%>) . -> . number?)
@@ -119,14 +122,14 @@ The password thus does NOT travel in plain text.
              `((user1 . ,(send g get-name1))
                (user2 . ,(send g get-name2))
                (size  . ,(number->string (send g get-nb-cells)))
-               (game  . ,(send g game->string)))))
+               (game  . ,(~s (send g game->list))))))
     
 ; Should add finished, winner, etc. ?
 (define/contract (update-game game-id ply);game next-player winner
   (number? list? . -> . any)
   (do-action "updategame" 
-             `((gameid . ,game-id)
-               (ply    . ,ply))))
+             `((gameid . ,(number->string game-id))
+               (ply    . ,(~s ply)))))
 
 (define (get-players)
   (do-action "getplayers"))

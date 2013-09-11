@@ -13,22 +13,31 @@
          web-server/servlet-env
          web-server/page
          racket/format
-         racket/class)
+         racket/list
+         racket/class
+         racket/string
+         racket/port)
 
-(provide start-server)
+(provide start-server towers-server-logger)
+
+(define-logger towers-server)
 
 ;; WARNING: http://docs.racket-lang.org/db/using-db.html?q=mysql-connect#%28part._intro-servlets%29
 
-(define stub-player (new player-test-game% [name "PlayerTestGame"]))
-
 (define (update-game user game-id ply)
-  (define lg (db:get-game game-id))
-  (define g (list-game->game lg stub-player stub-player)) ; raises error if incorrect game
+  (define lg (db:get-game user game-id))
+  (define g (list-game->game lg "ServerTest" "ServerTest")) ; raises error if incorrect game
 
   (send g replay-game)
+  (log-debug "Plies1: ~a" (send g get-plies))
   (when (send g play-ply ply) ; if illegal move, does nothing
-    (define lg2 (send g game->list))
-    (db:update-game user game-id lg2))
+    (log-debug "Plies2: ~a" (send g get-plies))
+    (unless (send g new-ply?)
+      (send g play-move 'end)) ;force end the current player's turn, if not already a new ply
+    (log-debug "Plies3: ~a" (send g get-plies))
+    (define winner (send g get-winner))
+    (db:update-game user game-id (send g game->list)
+                    (send g get-current-name) (if winner (send winner get-name) "")))
   
   ;todo:
   ; send email to next player
@@ -50,16 +59,16 @@
     (define pwd      (get-value 'password))
     (define version  (get-value 'version))
     (define action   (get-value 'action))
-    (write
-     (list date user pwd version action))
-    (newline)
+    (log-debug 
+     (string-append
+      "Request params: "
+      (string-join (map ~v (list date user pwd version action)))))
     
     (set! response 
           (cond [(not user)
                  (fail "Username must be provided")]
                 [(equal? action "newuser")
-                 (display "Creating user:")
-                 (displayln user)
+                 (log-info "Creating user: ~a" user)
                  ; TODO: send a confirmation email with a token
                  ; (plus ask to enter a word on the webpage?)
                  (if (< (string-length user) 2)
@@ -81,11 +90,13 @@
                        [("getgame")
                         (db:get-game user (get-value 'gameid))]
                        [("updategame")
-                        (define game (get-value 'gameid))
-                        (define ply (get-value 'ply))
-                        (displayln "Updating game")
-                        (write game)(newline)(write ply newline)
-                        (update-game user game ply)]
+                        (define game-id (get-value 'gameid))
+                        (define ply-str (get-value 'ply))
+                        (define ply (let ([ply (port->list read (open-input-string ply-str))])
+                                      (and (not (empty? ply))
+                                           (first ply))))
+                        (log-info "Updating game ~a" game-id)
+                        (update-game user game-id ply)]
                        [("listgames")
                         (db:get-game-list user)]
                        [("listcurrentgames")
@@ -94,8 +105,8 @@
                        [else (fail "bad request (auth Ok)")]))]
                 [else (fail "bad request")]
                 )))
-  (displayln "Response:")
-  (write response)(newline)
+  (log-debug "Response:\n ~a" response)
+  
   (response/xexpr (~v response)))
   
 ;; database : (or/c #f string/c). Useful only if db-auto-connect is #t
@@ -117,21 +128,22 @@
 
 (module+ main
   (require racket/cmdline)
-  (command-line 
-   #:once-any
-   [("-p" "--preferences") file
-                           "Sets the preference file"
-                           (pref-file file)]
-   [("--create-db") "Creates Towers database with empty tables if it does not exist"
-                    (load-preferences)
-                    (db:set-connection (send prefs get 'mysql-user)
-                                       (send prefs get 'mysql-password)
-                                       #f)
-                    (db:create-database (send prefs get 'database))
-                    (db:select-database (send prefs get 'database))
-                    (db:create-towers-tables)
-                    (exit)]
-   #:args ()
-   (load-preferences)
-   (db:set-auto-connection)
-   (start-server)))
+  (parameterize ([current-logger towers-server-logger])
+    (command-line 
+     #:once-any
+     [("-p" "--preferences") file
+                             "Sets the preference file"
+                             (pref-file file)]
+     [("--create-db") "Creates Towers database with empty tables if it does not exist"
+                      (load-preferences)
+                      (db:set-connection (send prefs get 'mysql-user)
+                                         (send prefs get 'mysql-password)
+                                         #f)
+                      (db:create-database (send prefs get 'database))
+                      (db:select-database (send prefs get 'database))
+                      (db:create-towers-tables)
+                      (exit)]
+     #:args ()
+     (load-preferences)
+     (db:set-auto-connection)
+     (start-server))))
