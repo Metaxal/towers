@@ -24,10 +24,11 @@
          bazaar/gui/msg-error
          racket/gui/base
          racket/class
+         racket/date
          racket/dict
+         racket/format
          racket/list
          racket/match
-         racket/date
          net/sendurl
          )
 
@@ -163,24 +164,9 @@
 
 (define (load-network-game game-id [update-rules #t])
   (with-error-to-error-port
-   (define g
-     (match (network:get-game game-id)
-       [(list version rules nb-cells name1 name2 class1 class2 plies)
-        (new network-game%
-             [version version]
-             [rules rules]
-             [nb-cells nb-cells]
-             [player1-name  name1]
-             [player2-name  name2]
-             [player1-class (if (current-user? name1) "Human" "Network")]
-             [player2-class (if (current-user? name2) "Human" "Network")]
-             [plies plies]
-             [network-id game-id]
-             )]
-       [else (error (format "Cannot read game ~a\n" game-id))
-             #f]))
-     (when g
-       (play-game-gui g #:update-rules update-rules))))
+   (define g (network:get-game game-id))
+   (when g
+     (play-game-gui g #:update-rules update-rules))))
 
 (define (load-game-gui)
   (let ([file (get-file "Load Towers Game"
@@ -353,9 +339,6 @@
   (update-frame-labels)
   )
 
-(define (create-user-callback)
-  (send-towers-url "/create-user.html"))
-
 (define player-names '())
 
 (define (update-list-box-select-player)
@@ -428,8 +411,12 @@
        ))
 
 (define (update-network-game)
+  (log-debug "current-user: ~a user-current-player?: ~a current-player:~a"
+             (current-user)
+             (user-current-player?)
+             (send current-game get-current-name))
   (when (and (network-game?)
-             (not (user-current-player?))) ; no need to update if it is our turn to play
+             (not (user-current-player?))) ; Don't update is player is already playing!
     (load-network-game (send current-game get-network-id) #f)))
 
 (define (timer-update-callback)
@@ -443,9 +430,9 @@
              (send prefs get 'auto-update)
              )
     (update-columns-box-games))
-  (when (and (network-game?)
-             (send prefs get 'auto-update)
+  (when (and (send prefs get 'auto-update)
              (not (user-current-player?))
+             (network-game?)
              (not replaying?))
       (update-network-game)
       (when (and (user-current-player?)
@@ -465,23 +452,74 @@
 (define (set-auto-end-turn)
   (auto-end-turn (send prefs get 'auto-end-turn)))
 
-(define (prefs-cb-dict)
-  `((,cb-prefs-auto-update       . auto-update)
-    (,cb-prefs-auto-update-notif . auto-update-notify)
-    (,cb-prefs-auto-end-turn     . auto-end-turn)
-    ))
+(define no-change-pass "******")
+
+(define (prefs-gui-dict)
+  ;(,widget key)
+  ;(,widget key pref->gui gui->pref)
+  `((,cb-prefs-auto-update        auto-update)
+    (,cb-prefs-auto-update-notif  auto-update-notify)
+    (,cb-prefs-auto-end-turn      auto-end-turn)
+    (,tf-prefs-user  user
+                     ,(λ(x) (or x ""))
+                     ,(λ(x) (and (not (equal? x ""))
+                                 x)))
+  ; calls get-salt, so user must be set before-hand, and thus must be before:
+    (,tf-prefs-pwd  password
+                    ,(λ(x) (if x no-change-pass "")) 
+                    ,(λ(pwd)
+                       (cond [(equal? pwd "") #f]
+                             [(equal? pwd no-change-pass)
+                              ; no change
+                              (send prefs get 'password)]
+                             [else (network:encode-password pwd)])))
+    (,tf-server-address    server-address)
+    (,tf-server-root-path  server-root-path)
+    (,tf-server-port       server-port ,number->string ,string->number)
+    (,tf-server-version    server-version)))
 
 (define (show-preferences-dialog)
-  (for ([(cb pref) (in-dict (prefs-cb-dict))])
-    (send cb set-value (send prefs get pref)))
+  ; Put the preferences in the widgets
+  (for ([pr (prefs-gui-dict)])
+    (match pr
+      [(list widget key)
+       (send widget set-value (send prefs get key))]
+      [(list widget key pref->gui gui->pref)
+       (send widget set-value (pref->gui (send prefs get key)))]))
   (send dialog-preferences show #t)
   )
 
 (define (preferences-callback)
-  ; save preferences from file
-  (for ([(cb pref) (in-dict (prefs-cb-dict))])
-    (send prefs set pref (send cb get-value)))
-  (send prefs save)
-  (set-auto-end-turn)
-  (send dialog-preferences show #f)
-  )
+  ; save preferences from the widgets to the file
+  (with-error-to-msg-box
+   (for ([pr (prefs-gui-dict)])
+     (match pr
+       [(list widget key)
+        (send prefs set key (send widget get-value))]
+       [(list widget key pref->gui gui->pref)
+        (send prefs set key (gui->pref (send widget get-value)))]))
+   (send prefs save)
+   (or (network:check-authentication)
+       (error "Authentication failed"))
+   (set-auto-end-turn)
+   (update-frame-labels)
+   (send dialog-preferences show #f)))
+
+
+;===================;
+;=== Create user ===;
+;===================;
+
+(define (create-user-callback)
+  (with-error-to-msg-box
+   (let ([l (send tf-new-user  get-value)]
+         [p (send tf-new-pwd   get-value)]
+         [e (send tf-new-email get-value)])
+     (network:create-user l p e)
+     (network:set-user-password l p)
+     (or (network:check-authentication)
+         (error "Authentication failed"))
+     (send prefs save)
+     (update-columns-box-games)
+     (update-frame-labels)
+     (send dialog-create-user show #f))))

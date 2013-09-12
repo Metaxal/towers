@@ -16,14 +16,18 @@
 
 (define-runtime-module-path gui.rkt "gui.rkt")
 
+(define-logger towers)
+
 (module+ main
   (require racket/cmdline)
-  
+  (current-logger towers-logger)
   (command-line 
    #:once-any
    [("-p" "--preferences") file
                            "Sets the preference file"
-                           (pref-file file)])
+                           (pref-file (path->complete-path 
+                                       file 
+                                       (find-system-path 'orig-dir)))])
   
   (start-splash splash-path "Towers" 700)
   (define gui-main (dynamic-require gui.rkt 'main))

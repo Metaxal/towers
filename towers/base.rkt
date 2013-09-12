@@ -119,5 +119,5 @@
 (send* prefs
   (set 'auto-update         #t #:save? #f)
   (set 'auto-update-notify  #t #:save? #f)
-  (set 'auto-end-turn       #t #:save? #f))
+  (set 'auto-end-turn       #f #:save? #f))
 

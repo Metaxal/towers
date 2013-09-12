@@ -1,7 +1,7 @@
-#lang racket/gui
+#lang racket/base
 
 ;;==========================================================================
-;;===                Code generated with MrEd Designer 3.11               ===
+;;===                Code generated with MrEd Designer 3.11              ===
 ;;===              https://github.com/Metaxal/MrEd-Designer              ===
 ;;==========================================================================
 
@@ -20,7 +20,6 @@
          dialog-user
          text-field-user
          text-field-password
-         cb-remember-user
          frame-games
          cb-games-show-finished
          frame-rules
@@ -39,6 +38,12 @@
          cb-prefs-auto-end-turn
          cb-prefs-auto-update
          cb-prefs-auto-update-notif
+         tf-prefs-user
+         tf-prefs-pwd
+         tf-server-address
+         tf-server-port
+         tf-server-root-path
+         tf-server-version
          button-undo
          message-ply-number
          horizontal-panel-all
@@ -50,7 +55,11 @@
          canvas-reserve-two
          panel-board
          canvas-reserve-one
-         message-player-one-name)
+         message-player-one-name
+         dialog-create-user
+         tf-new-user
+         tf-new-pwd
+         tf-new-email)
 
 (define (label-bitmap-proc l)
   (let ((label (first l)) (image? (second l)) (file (third l)))
@@ -122,7 +131,6 @@
 (define horizontal-panel-12244 #f)
 (define message-12245 #f)
 (define text-field-password #f)
-(define cb-remember-user #f)
 (define horizontal-pane-16817 #f)
 (define button-user-ok #f)
 (define button-user-cancel #f)
@@ -157,6 +165,13 @@
 (define group-box-panel-3902 #f)
 (define cb-prefs-auto-update #f)
 (define cb-prefs-auto-update-notif #f)
+(define tf-prefs-user #f)
+(define tf-prefs-pwd #f)
+(define group-box-panel-9121 #f)
+(define tf-server-address #f)
+(define tf-server-port #f)
+(define tf-server-root-path #f)
+(define tf-server-version #f)
 (define horizontal-pane-15586 #f)
 (define button-preferences-ok #f)
 (define button-preferences-cancel #f)
@@ -183,6 +198,20 @@
 (define panel-board #f)
 (define canvas-reserve-one #f)
 (define message-player-one-name #f)
+(define dialog-create-user #f)
+(define vertical-panel-41171 #f)
+(define horizontal-panel-41172 #f)
+(define message-41173 #f)
+(define tf-new-user #f)
+(define horizontal-panel-41175 #f)
+(define message-41176 #f)
+(define tf-new-pwd #f)
+(define horizontal-panel-45101 #f)
+(define message-45102 #f)
+(define tf-new-email #f)
+(define horizontal-pane-41178 #f)
+(define button-create-user-ok #f)
+(define button-create-user-cancel #f)
 (require racket/runtime-path)
 (define-runtime-path
  message-about-image-runtime-path
@@ -288,8 +317,6 @@
          #:text-field-password-callback
          (text-field-password-callback
           (lambda (text-field control-event) (void)))
-         #:cb-remember-user-callback
-         (cb-remember-user-callback (lambda (button control-event) (void)))
          #:button-user-ok-callback
          (button-user-ok-callback (lambda (button control-event) (void)))
          #:button-user-cancel-callback
@@ -331,6 +358,21 @@
          #:cb-prefs-auto-update-notif-callback
          (cb-prefs-auto-update-notif-callback
           (lambda (button control-event) (void)))
+         #:tf-prefs-user-callback
+         (tf-prefs-user-callback (lambda (text-field control-event) (void)))
+         #:tf-prefs-pwd-callback
+         (tf-prefs-pwd-callback (lambda (text-field control-event) (void)))
+         #:tf-server-address-callback
+         (tf-server-address-callback
+          (lambda (text-field control-event) (void)))
+         #:tf-server-port-callback
+         (tf-server-port-callback (lambda (text-field control-event) (void)))
+         #:tf-server-root-path-callback
+         (tf-server-root-path-callback
+          (lambda (text-field control-event) (void)))
+         #:tf-server-version-callback
+         (tf-server-version-callback
+          (lambda (text-field control-event) (void)))
          #:button-preferences-ok-callback
          (button-preferences-ok-callback
           (lambda (button control-event) (void)))
@@ -362,7 +404,19 @@
          #:canvas-reserve-two-paint-callback
          (canvas-reserve-two-paint-callback (λ (canvas dc) (void)))
          #:canvas-reserve-one-paint-callback
-         (canvas-reserve-one-paint-callback (λ (canvas dc) (void))))
+         (canvas-reserve-one-paint-callback (λ (canvas dc) (void)))
+         #:tf-new-user-callback
+         (tf-new-user-callback (lambda (text-field control-event) (void)))
+         #:tf-new-pwd-callback
+         (tf-new-pwd-callback (lambda (text-field control-event) (void)))
+         #:tf-new-email-callback
+         (tf-new-email-callback (lambda (text-field control-event) (void)))
+         #:button-create-user-ok-callback
+         (button-create-user-ok-callback
+          (lambda (button control-event) (void)))
+         #:button-create-user-cancel-callback
+         (button-create-user-cancel-callback
+          (lambda (button control-event) (void))))
   (set! main-frame
     (new
      main-frame-code-gen-class
@@ -946,22 +1000,6 @@
      (min-height 0)
      (stretchable-width #f)
      (stretchable-height #f)))
-  (set! cb-remember-user
-    (new
-     check-box%
-     (parent dialog-user)
-     (label (label-bitmap-proc (list "Remember me" #f #f)))
-     (callback cb-remember-user-callback)
-     (style '())
-     (value #f)
-     (font (list->font (list 8 #f 'default 'normal 'normal #f 'default #f)))
-     (enabled #t)
-     (vert-margin 2)
-     (horiz-margin 2)
-     (min-width 0)
-     (min-height 0)
-     (stretchable-width #f)
-     (stretchable-height #f)))
   (set! horizontal-pane-16817
     (new
      horizontal-pane%
@@ -1530,6 +1568,131 @@
      (min-height 0)
      (stretchable-width #f)
      (stretchable-height #f)))
+  (set! tf-prefs-user
+    (new
+     text-field%
+     (parent group-box-panel-3902)
+     (label "User:")
+     (callback tf-prefs-user-callback)
+     (init-value "")
+     (style
+      ((λ (l) (list* (first l) (second l) (third l)))
+       (list 'single 'horizontal-label '())))
+     (font (list->font (list 8 #f 'default 'normal 'normal #f 'default #f)))
+     (enabled #t)
+     (vert-margin 2)
+     (horiz-margin 2)
+     (min-width 0)
+     (min-height 0)
+     (stretchable-width #t)
+     (stretchable-height #f)))
+  (set! tf-prefs-pwd
+    (new
+     text-field%
+     (parent group-box-panel-3902)
+     (label "Password:")
+     (callback tf-prefs-pwd-callback)
+     (init-value "")
+     (style
+      ((λ (l) (list* (first l) (second l) (third l)))
+       (list 'single 'horizontal-label '(password))))
+     (font (list->font (list 8 #f 'default 'normal 'normal #f 'default #f)))
+     (enabled #t)
+     (vert-margin 2)
+     (horiz-margin 2)
+     (min-width 0)
+     (min-height 0)
+     (stretchable-width #t)
+     (stretchable-height #f)))
+  (set! group-box-panel-9121
+    (new
+     group-box-panel%
+     (parent vertical-panel-9052)
+     (label "Server")
+     (style '())
+     (font (list->font (list 8 #f 'default 'normal 'normal #f 'default #f)))
+     (enabled #t)
+     (vert-margin 2)
+     (horiz-margin 2)
+     (border 0)
+     (spacing 0)
+     (alignment (list 'center 'top))
+     (min-width 0)
+     (min-height 0)
+     (stretchable-width #t)
+     (stretchable-height #t)))
+  (set! tf-server-address
+    (new
+     text-field%
+     (parent group-box-panel-9121)
+     (label "Address:")
+     (callback tf-server-address-callback)
+     (init-value "")
+     (style
+      ((λ (l) (list* (first l) (second l) (third l)))
+       (list 'single 'horizontal-label '())))
+     (font (list->font (list 8 #f 'default 'normal 'normal #f 'default #f)))
+     (enabled #t)
+     (vert-margin 2)
+     (horiz-margin 2)
+     (min-width 0)
+     (min-height 0)
+     (stretchable-width #t)
+     (stretchable-height #f)))
+  (set! tf-server-port
+    (new
+     text-field%
+     (parent group-box-panel-9121)
+     (label "Port:")
+     (callback tf-server-port-callback)
+     (init-value "")
+     (style
+      ((λ (l) (list* (first l) (second l) (third l)))
+       (list 'single 'horizontal-label '())))
+     (font (list->font (list 8 #f 'default 'normal 'normal #f 'default #f)))
+     (enabled #t)
+     (vert-margin 2)
+     (horiz-margin 2)
+     (min-width 0)
+     (min-height 0)
+     (stretchable-width #t)
+     (stretchable-height #f)))
+  (set! tf-server-root-path
+    (new
+     text-field%
+     (parent group-box-panel-9121)
+     (label "Root path:")
+     (callback tf-server-root-path-callback)
+     (init-value "")
+     (style
+      ((λ (l) (list* (first l) (second l) (third l)))
+       (list 'single 'horizontal-label '())))
+     (font (list->font (list 8 #f 'default 'normal 'normal #f 'default #f)))
+     (enabled #t)
+     (vert-margin 2)
+     (horiz-margin 2)
+     (min-width 0)
+     (min-height 0)
+     (stretchable-width #t)
+     (stretchable-height #f)))
+  (set! tf-server-version
+    (new
+     text-field%
+     (parent group-box-panel-9121)
+     (label "Version:")
+     (callback tf-server-version-callback)
+     (init-value "")
+     (style
+      ((λ (l) (list* (first l) (second l) (third l)))
+       (list 'single 'horizontal-label '())))
+     (font (list->font (list 8 #f 'default 'normal 'normal #f 'default #f)))
+     (enabled #t)
+     (vert-margin 2)
+     (horiz-margin 2)
+     (min-width 0)
+     (min-height 0)
+     (stretchable-width #t)
+     (stretchable-height #f)))
   (set! horizontal-pane-15586
     (new
      horizontal-pane%
@@ -1922,4 +2085,224 @@
      (min-height 0)
      (stretchable-width #f)
      (stretchable-height #f)
-     (auto-resize #t))))
+     (auto-resize #t)))
+  (set! dialog-create-user
+    (new
+     dialog%
+     (parent main-frame)
+     (label "Create new user")
+     (width #f)
+     (height #f)
+     (x #f)
+     (y #f)
+     (style '())
+     (enabled #t)
+     (border 0)
+     (spacing 0)
+     (alignment (list 'center 'top))
+     (min-width 70)
+     (min-height 30)
+     (stretchable-width #f)
+     (stretchable-height #f)))
+  (set! vertical-panel-41171
+    (new
+     vertical-panel%
+     (parent dialog-create-user)
+     (style '())
+     (enabled #t)
+     (vert-margin 0)
+     (horiz-margin 0)
+     (border 0)
+     (spacing 0)
+     (alignment (list 'right 'top))
+     (min-width 0)
+     (min-height 0)
+     (stretchable-width #t)
+     (stretchable-height #t)))
+  (set! horizontal-panel-41172
+    (new
+     horizontal-panel%
+     (parent vertical-panel-41171)
+     (style '())
+     (enabled #t)
+     (vert-margin 0)
+     (horiz-margin 0)
+     (border 0)
+     (spacing 0)
+     (alignment (list 'right 'center))
+     (min-width 0)
+     (min-height 0)
+     (stretchable-width #t)
+     (stretchable-height #t)))
+  (set! message-41173
+    (new
+     message%
+     (parent horizontal-panel-41172)
+     (label (label-bitmap-proc (list "Login:" #f #f)))
+     (style '())
+     (font (list->font (list 8 #f 'default 'normal 'normal #f 'default #f)))
+     (enabled #t)
+     (vert-margin 2)
+     (horiz-margin 2)
+     (min-width 0)
+     (min-height 0)
+     (stretchable-width #f)
+     (stretchable-height #f)
+     (auto-resize #f)))
+  (set! tf-new-user
+    (new
+     text-field%
+     (parent horizontal-panel-41172)
+     (label "")
+     (callback tf-new-user-callback)
+     (init-value "")
+     (style
+      ((λ (l) (list* (first l) (second l) (third l)))
+       (list 'single 'horizontal-label '())))
+     (font (list->font (list 8 #f 'default 'normal 'normal #f 'default #f)))
+     (enabled #t)
+     (vert-margin 2)
+     (horiz-margin 2)
+     (min-width 200)
+     (min-height 0)
+     (stretchable-width #f)
+     (stretchable-height #f)))
+  (set! horizontal-panel-41175
+    (new
+     horizontal-panel%
+     (parent vertical-panel-41171)
+     (style '())
+     (enabled #t)
+     (vert-margin 0)
+     (horiz-margin 0)
+     (border 0)
+     (spacing 0)
+     (alignment (list 'right 'center))
+     (min-width 0)
+     (min-height 0)
+     (stretchable-width #t)
+     (stretchable-height #t)))
+  (set! message-41176
+    (new
+     message%
+     (parent horizontal-panel-41175)
+     (label (label-bitmap-proc (list "Password:" #f #f)))
+     (style '())
+     (font (list->font (list 8 #f 'default 'normal 'normal #f 'default #f)))
+     (enabled #t)
+     (vert-margin 2)
+     (horiz-margin 2)
+     (min-width 0)
+     (min-height 0)
+     (stretchable-width #f)
+     (stretchable-height #f)
+     (auto-resize #f)))
+  (set! tf-new-pwd
+    (new
+     text-field%
+     (parent horizontal-panel-41175)
+     (label "")
+     (callback tf-new-pwd-callback)
+     (init-value "")
+     (style
+      ((λ (l) (list* (first l) (second l) (third l)))
+       (list 'single 'horizontal-label '(password))))
+     (font (list->font (list 8 #f 'default 'normal 'normal #f 'default #f)))
+     (enabled #t)
+     (vert-margin 2)
+     (horiz-margin 2)
+     (min-width 200)
+     (min-height 0)
+     (stretchable-width #f)
+     (stretchable-height #f)))
+  (set! horizontal-panel-45101
+    (new
+     horizontal-panel%
+     (parent vertical-panel-41171)
+     (style '())
+     (enabled #t)
+     (vert-margin 0)
+     (horiz-margin 0)
+     (border 0)
+     (spacing 0)
+     (alignment (list 'right 'center))
+     (min-width 0)
+     (min-height 0)
+     (stretchable-width #t)
+     (stretchable-height #t)))
+  (set! message-45102
+    (new
+     message%
+     (parent horizontal-panel-45101)
+     (label (label-bitmap-proc (list "Email:" #f #f)))
+     (style '())
+     (font (list->font (list 8 #f 'default 'normal 'normal #f 'default #f)))
+     (enabled #t)
+     (vert-margin 2)
+     (horiz-margin 2)
+     (min-width 0)
+     (min-height 0)
+     (stretchable-width #f)
+     (stretchable-height #f)
+     (auto-resize #f)))
+  (set! tf-new-email
+    (new
+     text-field%
+     (parent horizontal-panel-45101)
+     (label "")
+     (callback tf-new-email-callback)
+     (init-value "")
+     (style
+      ((λ (l) (list* (first l) (second l) (third l)))
+       (list 'single 'horizontal-label '())))
+     (font (list->font (list 8 #f 'default 'normal 'normal #f 'default #f)))
+     (enabled #t)
+     (vert-margin 2)
+     (horiz-margin 2)
+     (min-width 200)
+     (min-height 0)
+     (stretchable-width #f)
+     (stretchable-height #f)))
+  (set! horizontal-pane-41178
+    (new
+     horizontal-pane%
+     (parent dialog-create-user)
+     (vert-margin 0)
+     (horiz-margin 0)
+     (border 0)
+     (spacing 0)
+     (alignment (list 'center 'center))
+     (min-width 0)
+     (min-height 0)
+     (stretchable-width #t)
+     (stretchable-height #t)))
+  (set! button-create-user-ok
+    (new
+     button%
+     (parent horizontal-pane-41178)
+     (label (label-bitmap-proc (list "Create user" #f #f)))
+     (callback button-create-user-ok-callback)
+     (style '(border))
+     (font (list->font (list 8 #f 'default 'normal 'normal #f 'default #f)))
+     (enabled #t)
+     (vert-margin 2)
+     (horiz-margin 2)
+     (min-width 60)
+     (min-height 0)
+     (stretchable-width #f)
+     (stretchable-height #f)))
+  (set! button-create-user-cancel
+    (new
+     button%
+     (parent horizontal-pane-41178)
+     (label (label-bitmap-proc (list "Cancel" #f #f)))
+     (callback button-create-user-cancel-callback)
+     (style '())
+     (font (list->font (list 8 #f 'default 'normal 'normal #f 'default #f)))
+     (enabled #t)
+     (vert-margin 2)
+     (horiz-margin 2)
+     (min-width 60)
+     (min-height 0)
+     (stretchable-width #f)
+     (stretchable-height #f))))

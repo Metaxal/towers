@@ -133,7 +133,11 @@
  (λ _ (send dialog-user show #f))
 
  #:menu-item-create-callback
+ (λ _ (send dialog-create-user show #t))
+ #:button-create-user-ok-callback
  (λ _ (create-user-callback))
+ #:button-create-user-cancel-callback
+ (λ _ (send dialog-create-user show #f))
  
  #:menu-item-games-callback
  (λ _ (update-columns-box-games))
