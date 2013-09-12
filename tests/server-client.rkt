@@ -106,6 +106,7 @@
   ; The reference game
   (define g-ref
     (without-logger (list-game->game (file->value game-file))))
+  ; The game we will play through the network
   (define g0 (new network-game% [nb-cells (send g-ref get-nb-cells)]
                   [player1-class "Human"] [player2-class "Human"]
                   [player1-name user1] [player2-name user2]))
@@ -133,6 +134,7 @@
 
 (play-full-game "game1.twr" "plip" "plop" "plap" "plup")
 (play-full-game "game2.twr" "plip" "plop" "plap" "plup")
+(play-full-game "game3.twr" "plip" "plop" "plap" "plup")
 
 #;(current-logger towers-lib-logger)
 

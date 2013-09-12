@@ -111,7 +111,7 @@
   
 ;; database : (or/c #f string/c). Useful only if db-auto-connect is #t
 (define (start-server #:database [database #f])
-  (when database   (send prefs set 'database database #:save? #f))
+  (when database (send prefs set 'database database #:save? #f))
   (serve/servlet start
                  ;#:command-line? #t
                  #:launch-browser? #f

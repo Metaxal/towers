@@ -926,29 +926,15 @@
       #:network-game-id [net-id #f])
   (match l
     [(list version rules nb-cells name1 name2 class1 class2 plies)
-     (let* ([class1 (or player1-class class1)]
-            [class2 (or player2-class class2)]
-            [g (new (if net-id network-game% game%)
-                    [version        version]
-                    [rules          rules]
-                    [nb-cells       nb-cells]
-                    [player1-name   name1]
-                    [player2-name   name2]
-                    [player1-class  class1]
-                    [player2-class  class2]
-                    [plies          plies])])
-       (when net-id
-         (send g set-network-id net-id))
-       g
-     #;(if net-id
+     (if net-id
          (new network-game%
               [version        version]
               [rules          rules]
               [nb-cells       nb-cells]
               [player1-name   name1]
               [player2-name   name2]
-              [player1-class  class1]
-              [player2-class  class2]
+              [player1-class (if (current-user? name1) "Human" "Network")]
+              [player2-class (if (current-user? name2) "Human" "Network")]
               [plies          plies]
               [network-id     net-id])
          (new game%
@@ -959,7 +945,7 @@
               [player2-name   name2]
               [player1-class  class1]
               [player2-class  class2]
-              [plies          plies])))]
+              [plies          plies]))]
     [else (error "Invalid list game" l)])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1029,11 +1015,11 @@
 
 ; Is name the current logged-in player ? (and is it a network game?)
 (define (current-user? name)
-  (and (network-game?)
+  (and ;(network-game?) ; probably not good, because when creating the game, we already need to know if the crurrent user is logged in
        (user=? (network:current-user) name)))
   
 ;; Is the current logged in player (if logged) the current-player?
 (define (user-current-player?)
-  (current-user? (send current-player get-name)))
+  (current-user? (send current-game get-current-name)))
 
 

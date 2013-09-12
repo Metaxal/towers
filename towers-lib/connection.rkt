@@ -56,12 +56,12 @@ The password thus does NOT travel in plain text.
      (build-list n (λ(n)(random 256))))
     "")))
 
-(define (encode-password pwd salt)
+(define (encode-password pwd [salt #f])
+  (unless salt (set! salt (get-salt)))
   (bytes->string/utf-8 
    (md5 (string-append pwd salt))))
 
 (define (set-current-password pwd [salt #f])
-  (unless salt (set! salt (get-salt)))
   (current-password (encode-password pwd salt)))
 
 (define (set-user-password l p [salt #f])
