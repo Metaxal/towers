@@ -43,9 +43,12 @@
   (send-url (string-append (network:server-address) sub-url)))
 
 (define (website-callback)
-  (send-towers-url ""))
+  (send-url "https://github.com/Metaxal/towers"))
+(define (bug-report-callback)
+  (send-url "https://github.com/Metaxal/towers/issues"))
 (define (stats-callback)
-  (send-towers-url "/statistics"))
+  (void) ; nothing to do for now
+  #;(send-towers-url "/statistics"))
 
 (define (rules-callback)
   (send-url/file manual-html-path))
@@ -301,25 +304,33 @@
       (send frame-games set-label
             (string-append "Games - " user))
       ; fill the list box with games
-      (let ([games (if show-finished? (network:get-game-list) (network:get-current-game-list))])
-        (send columns-box-games clear)
-        (for-each (λ(g)
-                    (match g
-                      [(vector #;list id size pl1 pl2 secs next-player p-winner)
-                       (send columns-box-games append
-                             (list (number->string id) pl1 pl2 
-                                   (number->string size)
-                                   (date->string (seconds->date secs) #t)
-                                   (if p-winner "" (starred-current-user next-player))
-                                   (or (starred-current-user p-winner) "")
-                                   )
-                             g #;(vector->list g))
-                       ]))
-                  games)
-        (if (send frame-games is-shown?)
-            (send frame-games refresh)
-            (send frame-games show #t))
-        ))))
+      (define games (if show-finished? (network:get-game-list) (network:get-current-game-list)))
+      (define i-current-game #f)
+      (define-values (rows data)
+        (for/fold ([rows '()] [data '()]) ([g games] [i (in-naturals)])
+          (match g
+            [(vector id size pl1 pl2 secs next-player p-winner)
+             (when (and (network-game?) 
+                        (equal? id (send current-game get-network-id)))
+               (set! i-current-game i))
+             (define row
+               (list (number->string id) pl1 pl2 
+                     (number->string size)
+                     (date->string (seconds->date secs) #t)
+                     (if (not (equal? "" p-winner)) "" (starred-current-user next-player))
+                     (or (starred-current-user p-winner) "")
+                     ))
+             (values (cons row rows) (cons g data))])))
+      (send columns-box-games set-choices (reverse rows) (reverse data))
+      ; select the game that is being played
+      #;(when (and i-current-game (network-game?))
+        (send columns-box-games set-selection i-current-game))
+      (when (> (send columns-box-games get-number) 0)
+        (send columns-box-games select 0 #f))
+      (if (send frame-games is-shown?)
+          (send frame-games refresh)
+          (send frame-games show #t))
+      )))
 
 
 (define (user-callback)
@@ -415,10 +426,12 @@
              (current-user)
              (user-current-player?)
              (send current-game get-current-name))
-  (when (and (network-game?)
-             (not (user-current-player?))) ; Don't update is player is already playing!
+  (when (network-game?)
     (load-network-game (send current-game get-network-id) #f)))
 
+;; TODO:
+;; Instead of downloading and replaying the whole game, 
+;; we could just download who is the next player and download the game if it is the current user.
 (define (timer-update-callback)
   (unless (and main-frame (send main-frame is-shown?))
     (send update-network-game-timer stop)
@@ -431,14 +444,19 @@
              )
     (update-columns-box-games))
   (when (and (send prefs get 'auto-update)
-             (not (user-current-player?))
+             (not (user-current-player?)) ; Don't update if the current player is playing!
              (network-game?)
              (not replaying?))
-      (update-network-game)
-      (when (and (user-current-player?)
-                 (send prefs get 'auto-update-notify))
-        (send fb-opponent-has-played show #t)
-        )))
+    (log-debug "Updating network game: current-player-name: ~a game-current-name: ~a user: ~a user-current-player: ~a" 
+               (send (current-player) get-name)
+               (send current-game get-current-name)
+               (current-user)
+               (user-current-player?))
+    (update-network-game)
+    (when (and (user-current-player?)
+               (send prefs get 'auto-update-notify))
+      (send fb-opponent-has-played show #t)
+      )))
 
 (define update-network-game-timer 
   (new timer% [notify-callback timer-update-callback]
