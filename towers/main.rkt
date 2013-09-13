@@ -22,7 +22,7 @@
   (require racket/cmdline)
   (current-logger towers-logger)
   (command-line 
-   #:once-any
+   #:once-each
    [("-p" "--preferences") file
                            "Sets the preference file"
                            (pref-file (path->complete-path 

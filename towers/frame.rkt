@@ -121,6 +121,7 @@
 (define menu-item-rules #f)
 (define separator-menu-item-3166 #f)
 (define menu-item-website #f)
+(define menu-item-bug-report #f)
 (define separator-menu-item-3519 #f)
 (define menu-item-about #f)
 (define dialog-user #f)
@@ -308,6 +309,10 @@
          (menu-item-website-callback (lambda (item event) (void)))
          #:menu-item-website-demand-callback
          (menu-item-website-demand-callback (lambda (item) (void)))
+         #:menu-item-bug-report-callback
+         (menu-item-bug-report-callback (lambda (item event) (void)))
+         #:menu-item-bug-report-demand-callback
+         (menu-item-bug-report-demand-callback (lambda (item) (void)))
          #:menu-item-about-callback
          (menu-item-about-callback (lambda (item event) (void)))
          #:menu-item-about-demand-callback
@@ -859,6 +864,16 @@
      (shortcut #f)
      (help-string "Go to website")
      (demand-callback menu-item-website-demand-callback)
+     (shortcut-prefix '(ctl))))
+  (set! menu-item-bug-report
+    (new
+     menu-item%
+     (parent menu-help)
+     (label "&Bug report")
+     (callback menu-item-bug-report-callback)
+     (shortcut #f)
+     (help-string "Item")
+     (demand-callback menu-item-bug-report-demand-callback)
      (shortcut-prefix '(ctl))))
   (set! separator-menu-item-3519 (new separator-menu-item% (parent menu-help)))
   (set! menu-item-about

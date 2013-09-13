@@ -103,6 +103,8 @@
  (λ _ (rules-callback))
  #:menu-item-website-callback
  (λ _ (website-callback))
+ #:menu-item-bug-report-callback
+ (λ _ (bug-report-callback))
  #:menu-item-stats-callback
  (λ _ (stats-callback))
 
@@ -218,6 +220,7 @@
         [callback (λ(lbc evt)
                     (when (equal? (send evt get-event-type) 'list-box)
                       (define game-id (vector-ref (send lbc get-selection-data) 0))
+                      (log-debug "Loading game by user: ~a" game-id)
                       (with-error-to-msg-box (load-network-game game-id))))]))
   (send* columns-box-games
     (set-column-width 3 50 10 200)

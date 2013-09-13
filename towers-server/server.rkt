@@ -14,11 +14,16 @@
          web-server/page
          racket/format
          racket/list
+         racket/dict
          racket/class
          racket/string
          racket/port)
 
-(provide start-server towers-server-logger)
+(provide start-server
+         run-server
+         create-towers-database
+         create-preferences
+         towers-server-logger)
 
 (define-logger towers-server)
 
@@ -123,27 +128,43 @@
                  )
   (db:close-connection))
 
-;; test with:
-;; curl 'http://localhost:8000/do?a=b'
+(define (run-server)
+  (load-preferences)
+  (db:set-auto-connection)
+  (start-server))
 
-(module+ main
-  (require racket/cmdline)
-  (parameterize ([current-logger towers-server-logger])
-    (command-line 
-     #:once-any
-     [("-p" "--preferences") file
-                             "Sets the preference file"
-                             (pref-file file)]
-     [("--create-db") "Creates Towers database with empty tables if it does not exist"
-                      (load-preferences)
-                      (db:set-connection (send prefs get 'mysql-user)
-                                         (send prefs get 'mysql-password)
-                                         #f)
-                      (db:create-database (send prefs get 'database))
-                      (db:select-database (send prefs get 'database))
-                      (db:create-towers-tables)
-                      (exit)]
-     #:args ()
-     (load-preferences)
-     (db:set-auto-connection)
-     (start-server))))
+(define (create-towers-database)
+  (load-preferences)
+  (displayln "Creating database: ~a\n" (send prefs get 'database))
+  (db:set-connection (send prefs get 'mysql-user)
+                     (send prefs get 'mysql-password)
+                     #f)
+  (db:create-database (send prefs get 'database))
+  (db:select-database (send prefs get 'database))
+  (db:create-towers-tables))
+
+(define (create-preferences)
+  (define keys
+    `((mysql-user "root")
+      (mysql-password "mysql")
+      (database "towers")
+      (server-address "localhost")
+      (server-root-path "towers")
+      (server-version "2.0")
+      (server-port 8080 ,number->string ,string->number)))
+  
+  (define (ask key default [->str values] [str-> values])
+    (define v0 (send prefs get key default))
+    (printf "~a [~a]: " key (->str v0))
+    (define str (read-line))
+    (send prefs set key (if (equal? str "")
+                            v0
+                            (str-> str))))
+  
+  (printf "Saving preferences to ~a\n" (send prefs get-file))
+  
+  (for ([v keys])
+    (apply ask v))
+  
+  (send prefs save)
+  )
