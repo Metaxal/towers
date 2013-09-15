@@ -11,7 +11,7 @@ It contains 3 packages/collections:
   * **towers**: The graphical client. Requires towers-lib, but can run without a server.
   * **towers-server**: The web server. Requires towers-lib. Needed to play network games with the client. Can be installed on a different machine.
 
-## Screenshots
+# Towers - The Game
 
 A 5x5 game with the basic terms:
 
@@ -197,5 +197,5 @@ If you want your turns to always end automatically, you can set that in the Edit
 
 You can end your turn prematurely by pressing the "End turn" button if you don't need to use all your move points.
 
-You can also resign a game by pressing the Resign button.
+You can also resign a game by pressing the "Resign" button.
 
