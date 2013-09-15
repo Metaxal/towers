@@ -166,8 +166,7 @@
                ;green]
               [winner white];black] ; if there is a winner, but not us
               [(eq? current-player player) light-yellow]
-              [else white])
-        )
+              [else white]))
   (send dc clear)
   
   (let* ([mvp (- (send player get-move-points) use-nb-move-points)]
@@ -192,8 +191,7 @@
       (draw-tower-number dc (if (eq? player player-one) color-one color-two)
                          used-points 
                          (- w (* (- used-points 1) 8) HALF-CELL-DX) HALF-CELL-DY))
-    )
-  )
+    ))
 
 (define (resize-main-frame)
   (send main-frame resize 
@@ -218,8 +216,7 @@
     (message-box "End of Game"
                  (if (equal? winner 'draw)
                      "This game is a draw."
-                     (string-append (send winner get-name) " has won!"))))
-  )
+                     (string-append (send winner get-name) " has won!")))))
 
 (define (set-frame-icon frame)
   (send frame set-icon 
@@ -227,24 +224,25 @@
         #f;(make-object bitmap% frame-icon-mask-path); #f
         'both))
 
-
 (define (update-names)
   (send message-player-one-name set-label 
         (string-append game-name1 " (" (send player-one get-class-name) ")"))
   (send message-player-two-name set-label 
-        (string-append game-name2 " (" (send player-two get-class-name) ")"))
-  )
+        (string-append game-name2 " (" (send player-two get-class-name) ")")))
 
 (define (update-game-buttons)
   (let ([can-play? (gui-can-play?)]
         [must-end? (player-must-end-turn?)])
-    (send button-update-game enable 
-          (and (network-game?) (not winner) (not replaying?) (not can-play?)))
+    (send button-update-game enable (and (network-game?)
+                                         (not winner)
+                                         (not replaying?)
+                                         (not can-play?)))
     (send button-end-turn    set-label (cond [(end-turn-draws?) draw-game-bmp]
                                              [must-end? end-turn-salient-bmp]
                                              [else end-turn-bmp]))
     (send button-end-turn    enable can-play?)
-    (send button-import      enable (and can-play? (can-import?)));(not must-end?)))
+    (send button-import      enable (and can-play? 
+                                         (can-import?)))
     (send button-resign      enable can-play?)
     (send button-undo        enable can-play?)
     ))
@@ -270,8 +268,7 @@
   (let* ([log (network:current-user)]
          [lab (λ(f t)(send f set-label
                            (string-append 
-                            t (if log (string-append " - " log) ""))))]
-         )
+                            t (if log (string-append " - " log) ""))))])
     (lab main-frame "Towers")
     (lab frame-games "Games")
     ))
