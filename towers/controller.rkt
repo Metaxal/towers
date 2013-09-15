@@ -17,6 +17,7 @@
          towers-lib/player
          towers-lib/player-ai1
 
+         bazaar/date
          bazaar/mutation
          bazaar/gui/board
          bazaar/gui/bitmaps
@@ -51,14 +52,14 @@
   #;(send-towers-url "/statistics"))
 
 (define (rules-callback)
-  (send-url/file manual-html-path))
+  (send-url "https://github.com/Metaxal/towers/blob/master/README.md#towers---the-game")
+  #;(send-url/file manual-html-path))
 
 ;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Game Controller ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (controller-init)
-  (date-display-format 'iso-8601) ; "2010-06-15 19:25:16"
   
   (set-auto-end-turn)
 
@@ -316,7 +317,7 @@
              (define row
                (list (number->string id) pl1 pl2 
                      (number->string size)
-                     (date->string (seconds->date secs) #t)
+                     (date-iso-like (seconds->date secs) #:time? #t)
                      (if (not (equal? "" p-winner)) "" (starred-current-user next-player))
                      (or (starred-current-user p-winner) "")
                      ))
@@ -336,11 +337,12 @@
 (define (user-callback)
   (let ([l (send text-field-user get-value)]
         [p (send text-field-password get-value)])
-    (with-handlers ([exn:fail? (λ(e)
-                                 (displayln e)
-                                 (network:current-user #f)
-                                 (message-box "Error" "Incorrect user or password" 
-                                              #f '(ok caution)))])
+;    (with-handlers ([exn:fail? (λ(e)
+;                                 (displayln e)
+;                                 (network:current-user #f)
+;                                 (message-box "Error" "Incorrect user or password" 
+;                                              #f '(ok caution)))])
+    (with-error-to-msg-box
       (network:set-user-password l p)
       (or (network:check-authentication)
           (error "Authentication failed"))

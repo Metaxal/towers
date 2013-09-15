@@ -12,7 +12,7 @@
                            (pref-file file)]
    [("--create-db") "Creates Towers database with empty tables if it does not exist"
                     (create-towers-database)]
-   [("--create-prefs") "Ask for the default preferences and creates the preferences file"
+   [("--create-prefs") "Ask for the default preferences and creates or modifies the preferences file"
                        (create-preferences)]
    [("--exit") "Does not run the server and exits immediately"
                     (exit)]

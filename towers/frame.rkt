@@ -493,7 +493,9 @@
      (parent horizontal-pane-3542)
      (label msg-about-towers-label)
      (style '())
-     (font (list->font (list 8 #f 'default 'normal 'normal #f 'default #f)))
+     (font
+      (list->font
+       (list 12 "Droid Sans" 'default 'normal 'bold #f 'default #f)))
      (enabled #t)
      (vert-margin 2)
      (horiz-margin 2)
@@ -506,7 +508,8 @@
     (new
      message%
      (parent dialog-about)
-     (label (label-bitmap-proc (list "www.towers-game.net" #f #f)))
+     (label
+      (label-bitmap-proc (list "https://github.com/Metaxal/towers" #f #f)))
      (style '())
      (font (list->font (list 8 #f 'default 'normal 'normal #f 'default #f)))
      (enabled #t)
@@ -638,7 +641,7 @@
      (label
       (label-bitmap-proc
        (list
-        "Many thanks to Lom, Claire, Nannig, Elucterio, Antoine, Fabien,"
+        "Many thanks to Lom, Claire, Nannig, Elucterio, Antoine, Fabien, Fabio,"
         #f
         #f)))
      (style '())
