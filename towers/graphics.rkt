@@ -253,6 +253,7 @@
   (when current-game
     (let ([rules (current-specific-rules)]
           [ed (send text-field-rules get-editor)])
+      (log-debug "current-rules: ~a rules: ~a" (send current-game get-rules) rules)
       (send ed erase)
       (if (empty? rules)
           (send ed insert "This game uses the official rules.\n")
@@ -260,6 +261,8 @@
                            (send ed insert 
                                  (string-append "- " (rule->string r) "\n"))))
                     rules))
+      (send text-field-rules refresh)
+      (send frame-rules refresh)
       (send frame-rules show (not (empty? rules)))
       )))
   
