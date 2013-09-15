@@ -28,7 +28,7 @@
 ;; For a given ply number, tells how many moves there is
 ;; for the current-game-saved (supposed to be set)
 (define/provide (get-nb-moves-saved ply-num)
-  (if (and (> ply-num 0) 
+  (if (and (> ply-num 0)
            (<= ply-num (length game-plies)))
       (length (list-ref game-plies (sub1 ply-num)))
       0))
@@ -59,15 +59,15 @@
         ;      (get-nb-moves-saved replay-current-ply-num))
         ))
   )
-  
+
 (define/provide (go-to-next-move)
   (init-ply-move-number)
-  (if (< replay-current-move-num 
+  (if (< replay-current-move-num
          (get-nb-moves-saved replay-current-ply-num))
       (++replay-current-move-num)
       (go-to-next-ply))
   )
-  
+
 (define/provide (go-to-previous-move)
   (init-ply-move-number)
   (when (or (> replay-current-move-num 0)
@@ -82,7 +82,7 @@
 
 (define/provide (replay-current-game)
   ; save the full current game in case we replay a part of the current game
-  (play-game-gui current-game 
+  (play-game-gui current-game
                  replay-current-ply-num
                  replay-current-move-num
                  #:update-rules #f

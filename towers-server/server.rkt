@@ -6,6 +6,7 @@
 (require (prefix-in db: "db.rkt")
          ;towers-lib/preferences
          towers-lib/base
+         (only-in towers-lib/connection make-salt)
          towers-lib/game
          towers-lib/player
          bazaar/list
@@ -21,6 +22,7 @@
 
 (provide start-server
          run-server
+         create-user
          create-towers-database
          create-preferences
          towers-server-logger)
@@ -43,7 +45,7 @@
     (define winner (send g get-winner))
     (db:update-game user game-id (send g game->list)
                     (send g get-current-name) (if winner (send winner get-name) "")))
-  
+
   ;todo:
   ; send email to next player
   )
@@ -64,12 +66,12 @@
     (define pwd      (get-value 'password))
     (define version  (get-value 'version))
     (define action   (get-value 'action))
-    (log-debug 
+    (log-debug
      (string-append
       "Request params: "
       (string-join (map ~v (list date user pwd version action)))))
-    
-    (set! response 
+
+    (set! response
           (cond [(not user)
                  (fail "Username must be provided")]
                 [(equal? action "newuser")
@@ -94,6 +96,10 @@
                                         (get-value 'size) (get-value 'game) user1)]
                        [("getgame")
                         (db:get-game user (get-value 'gameid))]
+                       [("acceptgame")
+                        (db:accept-game user (get-value 'gameid))]
+                       [("rejectgame")
+                        (db:reject-game user (get-value 'gameid))]
                        [("updategame")
                         (define game-id (get-value 'gameid))
                         (define ply-str (get-value 'ply))
@@ -104,6 +110,8 @@
                         (update-game user game-id ply)]
                        [("listgames")
                         (db:get-game-list user)]
+                       [("listaskgames")
+                        (db:get-ask-game-list user)]
                        [("listcurrentgames")
                         (db:get-current-game-list user)]
                        [("checkauth") #t]
@@ -111,9 +119,9 @@
                 [else (fail "bad request")]
                 )))
   (log-debug "Response:\n ~a" response)
-  
+
   (response/xexpr (~v response)))
-  
+
 ;; database : (or/c #f string/c). Useful only if db-auto-connect is #t
 (define (start-server #:database [database #f])
   (when database (send prefs set 'database database #:save? #f))
@@ -123,7 +131,7 @@
                  ;#:connection-close? #t ; ?
                  #:listen-ip #f ; listen to every-one
                  #:port (server-port)
-                 #:servlet-path (string-append "/" (server-root-path) 
+                 #:servlet-path (string-append "/" (server-root-path)
                                                "/" (server-version))
                  )
   (db:close-connection))
@@ -133,9 +141,15 @@
   (db:set-auto-connection)
   (start-server))
 
+(define (create-user user pwd email)
+  (log-info "Creating user ~a <~a>" user email)
+  (load-preferences)
+  (db:set-auto-connection)
+  (db:create-user user pwd (make-salt) email))
+
 (define (create-towers-database)
   (load-preferences)
-  (displayln "Creating database: ~a\n" (send prefs get 'database))
+  (log-info "Creating database: ~a\n" (send prefs get 'database))
   (db:set-connection (send prefs get 'mysql-user)
                      (send prefs get 'mysql-password)
                      #f)
@@ -152,7 +166,7 @@
       (server-root-path "towers")
       (server-version "2.0")
       (server-port 8080 ,number->string ,string->number)))
-  
+
   (define (ask key default [->str values] [str-> values])
     (define v0 (send prefs get key default))
     (printf "~a [~a]: " key (->str v0))
@@ -160,11 +174,11 @@
     (send prefs set key (if (equal? str "")
                             v0
                             (str-> str))))
-  
+
   (printf "Saving preferences to ~a\n" (send prefs get-file))
-  
+
   (for ([v keys])
     (apply ask v))
-  
+
   (send prefs save)
   )

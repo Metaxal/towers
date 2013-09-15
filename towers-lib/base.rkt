@@ -20,7 +20,7 @@
 
 (define game<%> (interface ())) ; just to be used for contracts
 
-(define prefs 
+(define prefs
   (new preferences% [file (make-config-file-path "towers" "prefs.rktd")]
        [default-preferences
          '((server-address    . "localhost")
@@ -37,7 +37,7 @@
     [(file) (send prefs set-file file)]))
 
 ;; Make accessors
-;; (warning: uses the value of prefs at the time of the definition, so we can't change 
+;; (warning: uses the value of prefs at the time of the definition, so we can't change
 ;; the prefs binding afterwards.)
 (define-pref-procs prefs
   (server-address    'server-address)
@@ -68,11 +68,11 @@
   (log-debug (string-append "\n" (send g ->string))))
 
 (define (loop-receive . receivers)
-  (void 
-   (thread 
-    (λ()(let loop () 
+  (void
+   (thread
+    (λ()(let loop ()
           (define v (apply sync receivers))
-          (printf "[~a] ~a\n" (vector-ref v 0) (vector-ref v 1)) 
+          (printf "~a [~a]\n" (vector-ref v 1) (vector-ref v 0))
           (loop))))))
 
 (define no-logger (make-logger 'no-logger))
@@ -81,7 +81,7 @@
     body ...))
 
 ;; Returns the result of the expression,
-;; but if the expression is #f, has the side effect 
+;; but if the expression is #f, has the side effect
 ;; of logging a message
 (define (or-log expr str . args)
   (cond [expr]

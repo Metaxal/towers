@@ -27,7 +27,7 @@
 (define (get-tower-bmp player master?)
   (if (eq? player player-one)
       (if master? tower-one-master-bmp tower-one-bmp)
-      (if master? tower-two-master-bmp tower-two-bmp) 
+      (if master? tower-two-master-bmp tower-two-bmp)
       ))
 (define (get-tower-mask player master?)
   (if (eq? player player-one)
@@ -36,7 +36,7 @@
 
 
 (define (set-board-cell-pic)
-  (send board set-cell-pic 
+  (send board set-cell-pic
         ; share bmp/bmp-dc to avoid creating it for each cell:
         (let* ([bmp (make-object bitmap% CELL-DX CELL-DY)]
                [bmp-dc (make-object bitmap-dc% bmp)])
@@ -48,10 +48,10 @@
                    [pos       (list j i)]
                    [selected? (equal? selected-cell pos)]
                    )
-              (send bmp-dc draw-bitmap 
+              (send bmp-dc draw-bitmap
                     (if (= bk 0) black-cell-bmp white-cell-bmp)
                     0 0)
-              (let ([bmp-over 
+              (let ([bmp-over
                      (cond [selected? selected-cell-bmp]
                            [(and master? (send owner master-attacked?) (not winner))
                             ;(printf "Master in danger!\n")
@@ -104,7 +104,7 @@
         ))))
 
 ;; Main function to call to draw a tower
-(define (draw-tower dc player master? num 
+(define (draw-tower dc player master? num
                     #:with-mask [with-mask #t]
                     #:x [x 0] #:y [y 0]
                     )
@@ -120,7 +120,7 @@
     (draw-tower-number dc (if (eq? player player-one) color-one color-two)
                        num (+ x HALF-CELL-DX) (+ y HALF-CELL-DY)))
   ))
-  
+
 
 
 (define (draw-board)
@@ -129,7 +129,7 @@
   (send canvas-reserve-two refresh)
   (update-msg-ply-number)
   )
-    
+
 (define reserve-buffer #f)
 (define reserve-buffer-dc #f)
 
@@ -153,14 +153,14 @@
                     use-nb-move-points)
              (send (send canvas-reserve-two get-dc) draw-bitmap reserve-buffer 0 0))
       ))
-      
+
 
 ;; use-nb-move-points: remove some move-points from the remaining points.
 ;; does not test for consistency!
 (define (draw-reserve dc player tower-bmp tower-mask [use-nb-move-points 0])
   ; If current player, draw background to yellow:
-  (send dc set-background 
-        (cond [(eq? winner player) 
+  (send dc set-background
+        (cond [(eq? winner player)
                win-green]
                ;(send the-color-database find-color "Medium Spring Green")]
                ;green]
@@ -168,7 +168,7 @@
               [(eq? current-player player) light-yellow]
               [else white]))
   (send dc clear)
-  
+
   (let* ([mvp (- (send player get-move-points) use-nb-move-points)]
          [nbres (send player get-num-pawns-reserve)]
          [used-points (- nbres mvp)]
@@ -180,27 +180,27 @@
                         tower-mask))
     (when (> mvp 0)
       (draw-tower-number dc (if (eq? player player-one) color-one color-two)
-                         mvp 
+                         mvp
                          (+ (* (- mvp 1) 8) HALF-CELL-DX) HALF-CELL-DY))
-    
+
     (for ([i (in-range used-points)])
       (draw-bitmap/mask dc tower-bmp
                         (- w (* i 8) CELL-DX) 0
                         tower-mask))
     (when (> used-points 0)
       (draw-tower-number dc (if (eq? player player-one) color-one color-two)
-                         used-points 
+                         used-points
                          (- w (* (- used-points 1) 8) HALF-CELL-DX) HALF-CELL-DY))
     ))
 
 (define (resize-main-frame)
-  (send main-frame resize 
+  (send main-frame resize
         (send main-frame min-width)
-        (send main-frame min-height)))     
+        (send main-frame min-height)))
 
 (define (update-msg-ply-number)
   (let ([ply-num-total (length (game-plies current-game))])
-    (send* message-ply-number 
+    (send* message-ply-number
       (set-label
        (format "~a/~a"
                (if replaying? replay-current-ply-num ply-num-total)
@@ -219,15 +219,15 @@
                      (string-append (send winner get-name) " has won!")))))
 
 (define (set-frame-icon frame)
-  (send frame set-icon 
+  (send frame set-icon
         (make-object bitmap% frame-icon-path 'png)
         #f;(make-object bitmap% frame-icon-mask-path); #f
         'both))
 
 (define (update-names)
-  (send message-player-one-name set-label 
+  (send message-player-one-name set-label
         (string-append game-name1 " (" (send player-one get-class-name) ")"))
-  (send message-player-two-name set-label 
+  (send message-player-two-name set-label
         (string-append game-name2 " (" (send player-two get-class-name) ")")))
 
 (define (update-game-buttons)
@@ -241,7 +241,7 @@
                                              [must-end? end-turn-salient-bmp]
                                              [else end-turn-bmp]))
     (send button-end-turn    enable can-play?)
-    (send button-import      enable (and can-play? 
+    (send button-import      enable (and can-play?
                                          (can-import?)))
     (send button-resign      enable can-play?)
     (send button-undo        enable can-play?)
@@ -256,18 +256,18 @@
       (if (empty? rules)
           (send ed insert "This game uses the official rules.\n")
           (for-each (λ(r)(when r
-                           (send ed insert 
+                           (send ed insert
                                  (string-append "- " (rule->string r) "\n"))))
                     rules))
       (send text-field-rules refresh)
       (send frame-rules refresh)
       (send frame-rules show (not (empty? rules)))
       )))
-  
-(define (update-frame-labels) 
+
+(define (update-frame-labels)
   (let* ([log (network:current-user)]
          [lab (λ(f t)(send f set-label
-                           (string-append 
+                           (string-append
                             t (if log (string-append " - " log) ""))))])
     (lab main-frame "Towers")
     (lab frame-games "Games")

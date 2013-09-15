@@ -11,7 +11,7 @@
          framework/splash
          )
 
-(define-runtime-path splash-path 
+(define-runtime-path splash-path
   (build-path "img" "splash.png"))
 
 (define-runtime-module-path gui.rkt "gui.rkt")
@@ -21,18 +21,18 @@
 (module+ main
   (require racket/cmdline)
   (current-logger towers-logger)
-  (command-line 
+  (command-line
    #:once-each
    [("-p" "--preferences") file
                            "Sets the preference file"
-                           (pref-file (path->complete-path 
-                                       file 
+                           (pref-file (path->complete-path
+                                       file
                                        (find-system-path 'orig-dir)))])
-  
+
   (start-splash splash-path "Towers" 700)
   (define gui-main (dynamic-require gui.rkt 'main))
   (shutdown-splash)
   (gui-main 'init)
   (close-splash)
-  
+
   (gui-main 'show))

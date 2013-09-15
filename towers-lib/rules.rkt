@@ -22,8 +22,8 @@
 ;    [no-lock-out      . "Pawns are not locked when they get out of a tower."]
 ;    [lock-master-out  . "When a pawn gets out of the master, the *master* gets locked"]
 ;    [still-tower-out  . "A pawn can get out of a tower only if it has not moved in the current ply"]
-    ; with no-master-win and no-lock-master (requires tower-out): 
-    ; avoids winning with the master by piercing the defense 
+    ; with no-master-win and no-lock-master (requires tower-out):
+    ; avoids winning with the master by piercing the defense
 ;    [lock-tower-out   . "Pawns moved out of towers (master or not) get locked"]
     ; makes splitting less powerfull
     [lock-after-move  . "Pawns/towers get locked after their move."]
@@ -35,13 +35,13 @@
     ;[no-lock-import   . "Importing a pawn does NOT lock the master tower"]
     ; makes import less powerfull.
     [import-first     . "Importing pawns can only be done at the beginning of the ply."]
-    ; logical: 1) Import 2) Move 3) Export   
+    ; logical: 1) Import 2) Move 3) Export
 ;    [import-one       . "Only one pawn can be imported by ply"]
     ; therefore exports (to raise move points) must be done carefully
 ;    [export-one       . "Only one pawn can be exported by ply"]
 ;    [export-now       . "Pawns are immediately exported to the reserve (no wait till the end of the ply)"]
-    ; avoids problems of the number of pawns on the master 
-    ; should be used with lock-raise-tower, 
+    ; avoids problems of the number of pawns on the master
+    ; should be used with lock-raise-tower,
 ;    [raise-one        . "Towers can only be raised by one pawn. The master tower cannot grow by more than one."]
     ;[no-first-export  . "The first player cannot export on the very first ply"]
     [no-first-lock-master . "Do not lock the master on the very first ply."]
@@ -74,6 +74,6 @@
 (define (check/raise-rule? rules rule val)
   (or (check-rule? rules rule val)
       (not (raise (error
-                   (string-append "This action is not allowed because of the following rule:\n" 
+                   (string-append "This action is not allowed because of the following rule:\n"
                                   (rule->line-string rule)
                                   "\n"))))))

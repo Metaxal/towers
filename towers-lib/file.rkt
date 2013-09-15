@@ -22,7 +22,7 @@
   (and (file-exists? file)
        (list-game->game (file->value file))))
 
-(define (save-current-game file) 
+(define (save-current-game file)
   (save-game file current-game))
 
 (define (load-current-game file)

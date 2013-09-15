@@ -17,7 +17,7 @@
 (define-player-class player-alpha-beta-gui% "Alpha-Beta"
   (class* player-alpha-beta% (player-gui<%>)
     (super-new)
-    
+
     (inherit-field depth-max game)
     (inherit say stop-search get-nb-move-remaining get-nb-move-total)
 
@@ -28,8 +28,8 @@
     (define bt-ok (new button% [parent diag]
                        [label "Ok"]
                        [callback (λ _ (send diag show #f))]))
-    
-    
+
+
     (define frame-search (new frame% [parent main-frame]
                               [label "Searching..."]))
     (set-frame-icon frame-search)
@@ -42,16 +42,16 @@
                                 [label "Stop search now!"]
                                 [callback (λ _ (stop-search))]
                                 ))
-    
+
     ;(define/override (say str)
     ;  (message-box "Towers" str))
-    
+
     (define/override (update-view)
       (when (eq? current-game game)
         (say "Updating view")
         (update)
         (sleep/yield .5)))
-    
+
     (define/override (on-play-move)
       (send frame-search show #t) ; thread because a dialog% locks the thread
       (thread (λ()(super on-play-move)
@@ -64,10 +64,10 @@
           (send search-gauge set-value (- (get-nb-move-total) (get-nb-move-remaining)))
           (loop)))
       )
-      
-    
+
+
     ; asks for difficulty level
     (send diag show #t)
     (set! depth-max (+ 1 (send lb-difficulty get-selection)))
-    
+
     ))

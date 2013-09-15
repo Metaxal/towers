@@ -18,6 +18,7 @@
          towers-lib/player-ai1
 
          bazaar/date
+         bazaar/values
          bazaar/mutation
          bazaar/gui/board
          bazaar/gui/bitmaps
@@ -60,7 +61,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (controller-init)
-  
+
   (set-auto-end-turn)
 
   ;; Initialize the game:
@@ -122,8 +123,8 @@
   (when (and (gui-can-play?)
              (or (not (end-turn-draws?))
                  (equal? 'yes
-                        (message-box "Draw game?" 
-                                     "Passing your turn will draw this game.\nAre you sure you want to pass?" 
+                        (message-box "Draw game?"
+                                     "Passing your turn will draw this game.\nAre you sure you want to pass?"
                                      main-frame
                                      '(yes-no caution)))))
     (player-end-turn)
@@ -132,8 +133,8 @@
 
 (define (gui-resign)
   (when (and (gui-can-play?)
-             (equal? 'yes 
-                     (message-box "Resign?" 
+             (equal? 'yes
+                     (message-box "Resign?"
                                   "Are you sure you want to resign this game?"
                                   #f '(caution yes-no))))
     (resign)
@@ -197,8 +198,8 @@
       (set-selected-cell pos)
       (set-nb-selected-pawns nbp)
       )))
-  
-;; Selects a cell, 
+
+;; Selects a cell,
 ;; or moves the tower
 (define (board-left-down xc yc)
   (with-error-to-msg-box
@@ -238,7 +239,7 @@
                         (send board xc->x (first pos))
                         (send board yc->y (second pos))
                         ))))
-  
+
 
 (define (board-mouse-move x y)
   ; the random part is here to filter some events to make it faster
@@ -249,7 +250,7 @@
            [scx (first selected-cell)]
            [scy (second selected-cell)]
            [sc  (board-ref board scx scy)]
-           [master? (and (equal? (cell-num-pawns sc) 
+           [master? (and (equal? (cell-num-pawns sc)
                                               nb-selected-pawns)
                                       (cell-has-master? sc))]
            [required-move-points
@@ -261,23 +262,23 @@
         (send board draw-over
               (λ(dc)
                 (draw-cell-path dc (cons (list cx cy) (free-cell-path-list scx scy cx cy)))
-                
+
                 ; VERY Strange!
-                ; I first used a buffer to store the image 
+                ; I first used a buffer to store the image
                 ; instead of recreating it each time.
                 ; But because (somehow) of the mask, it was taking a lot of
                 ; time to render! Weirder: this was not true with the master...
                 ; Fortunately, if I take the "redraw-it-each-time" version,
                 ; it works smoothly...
-                (draw-tower dc current-player 
-                            master? nb-selected-pawns 
+                (draw-tower dc current-player
+                            master? nb-selected-pawns
                             #:x (- x HALF-CELL-DX)
                             #:y (- y HALF-CELL-DY)
                             )
                 ;                ; The following makes the above drawing very slow!!
                 ;                ; Weird: not true if the master is being moved!
-                ;                (draw-bitmap/mask dc 
-                ;                                  selected-tower-bmp 
+                ;                (draw-bitmap/mask dc
+                ;                                  selected-tower-bmp
                 ;                                  (- x HALF-CELL-DX)
                 ;                                  (- y HALF-CELL-DY)
                 ;                                  )
@@ -306,22 +307,29 @@
             (string-append "Games - " user))
       ; fill the list box with games
       (define games (if show-finished? (network:get-game-list) (network:get-current-game-list)))
+      (define ask-games (network:get-ask-game-list))
       (define i-current-game #f)
       (define-values (rows data)
-        (for/fold ([rows '()] [data '()]) ([g games] [i (in-naturals)])
+        (for/fold ([rows '()] [data '()]) 
+          ([g (in-sequences games ask-games)]
+           [i (in-naturals)])
           (match g
-            [(vector id size pl1 pl2 secs next-player p-winner)
-             (when (and (network-game?) 
+            [(vector id size creator pl1 pl2 secs next-player p-winner accepted)
+             (when (and (network-game?)
                         (equal? id (send current-game get-network-id)))
                (set! i-current-game i))
              (define row
-               (list (number->string id) pl1 pl2 
+               (list (number->string id) pl1 pl2
                      (number->string size)
                      (date-iso-like (seconds->date secs) #:time? #t)
-                     (if (not (equal? "" p-winner)) "" (starred-current-user next-player))
+                     (cond [(equal? accepted "ask") "??"] ; ask player
+                           [(equal? "" p-winner)
+                            (starred-current-user next-player)]
+                           [else ""])
                      (or (starred-current-user p-winner) "")
                      ))
              (values (cons row rows) (cons g data))])))
+      
       (send columns-box-games set-choices (reverse rows) (reverse data))
       ; select the game that is being played
       #;(when (and i-current-game (network-game?))
@@ -333,6 +341,28 @@
           (send frame-games show #t))
       )))
 
+(define (columns-box-games-callback)
+  (define data (send columns-box-games get-selection-data))
+  (defm (vector id size creator pl1 pl2 secs next-player p-winner accepted) data)
+  (log-debug "Loading game by user: ~a" id)
+  (with-error-to-msg-box (load-network-game id))
+  (when (equal? "ask" accepted)
+    (define resp
+      (message-box "Accept new game?"
+                   (string-append "Would you like to play this game with " creator "?")
+                   main-frame
+                   '(yes-no)))
+    (cond [(eq? 'yes resp)
+           (network:accept-game id)]
+          [(eq? 'no resp)
+           (network:reject-game id)
+           ;+ open a new default game?
+           ]
+          [else (void)] ; clicked on something else?
+        )
+    (update-columns-box-games)
+    ))
+
 
 (define (user-callback)
   (let ([l (send text-field-user get-value)]
@@ -340,7 +370,7 @@
 ;    (with-handlers ([exn:fail? (λ(e)
 ;                                 (displayln e)
 ;                                 (network:current-user #f)
-;                                 (message-box "Error" "Incorrect user or password" 
+;                                 (message-box "Error" "Incorrect user or password"
 ;                                              #f '(ok caution)))])
     (with-error-to-msg-box
       (network:set-user-password l p)
@@ -366,19 +396,20 @@
     (for-each (λ(p)(send list-box-opponent append p))
               players)
     ))
-    
+
 ;; New network game
 (define (show-network-new-game)
-  (when (network-current-user-or-ask)
-    (set! new-game-gui-args (list #t "Human" (network:current-user)))
-    
-    (set! player-names (network:get-players))
-    
-    (send text-field-search-opponent set-value "")
-    (update-list-box-select-player)
-    
-    (send dialog-new-network-game show #t)
-    ))
+  (with-error-to-msg-box
+   (when (network-current-user-or-ask)
+     (set! new-game-gui-args (list #t "Human" (network:current-user)))
+     
+     (set! player-names (network:get-players))
+     
+     (send text-field-search-opponent set-value "")
+     (update-list-box-select-player)
+     
+     (send dialog-new-network-game show #t)
+     )))
 
 (define new-game-gui-args #f)
 
@@ -396,7 +427,7 @@
     (if opponent
         (begin
           (send dialog-new-network-game show #f)
-          (append! new-game-gui-args 
+          (append! new-game-gui-args
                    (if net?
                        (list "Network" opponent)
                        (list opponent "Player 2")))
@@ -408,7 +439,7 @@
 
 (define (show-dialog-new-game)
   (send msg-new-game-players
-        set-label (string-append 
+        set-label (string-append
                    (third new-game-gui-args)
                    " VS "
                    (fifth new-game-gui-args)
@@ -432,7 +463,7 @@
     (load-network-game (send current-game get-network-id) #f)))
 
 ;; TODO:
-;; Instead of downloading and replaying the whole game, 
+;; Instead of downloading and replaying the whole game,
 ;; we could just download who is the next player and download the game if it is the current user.
 (define (timer-update-callback)
   (unless (and main-frame (send main-frame is-shown?))
@@ -449,7 +480,7 @@
              (not (user-current-player?)) ; Don't update if the current player is playing!
              (network-game?)
              (not replaying?))
-    (log-debug "Updating network game: current-player-name: ~a game-current-name: ~a user: ~a user-current-player: ~a" 
+    (log-debug "Updating network game: current-player-name: ~a game-current-name: ~a user: ~a user-current-player: ~a"
                (send (current-player) get-name)
                (send current-game get-current-name)
                (current-user)
@@ -460,7 +491,7 @@
       (send fb-opponent-has-played show #t)
       )))
 
-(define update-network-game-timer 
+(define update-network-game-timer
   (new timer% [notify-callback timer-update-callback]
        [interval 60000]))
 
@@ -486,7 +517,7 @@
                                  x)))
   ; calls get-salt, so user must be set before-hand, and thus must be before:
     (,tf-prefs-pwd  password
-                    ,(λ(x) (if x no-change-pass "")) 
+                    ,(λ(x) (if x no-change-pass ""))
                     ,(λ(pwd)
                        (cond [(equal? pwd "") #f]
                              [(equal? pwd no-change-pass)

@@ -4,7 +4,7 @@
 
 #| Connection to server for games
 
-This module provides functions to 
+This module provides functions to
 synchronise game files with a server.
 (there must of course be a special server for that).
 
@@ -14,7 +14,8 @@ The password thus does NOT travel in plain text.
 
 |#
 
-(provide encode-password
+(provide make-salt
+         encode-password
          server-address
          server-port
          server-root-path
@@ -23,7 +24,10 @@ The password thus does NOT travel in plain text.
          set-user-password
          check-authentication
          create-user
+         accept-game
+         reject-game
          get-game-list
+         get-ask-game-list
          get-current-game-list
          update-game
          get-game
@@ -50,15 +54,15 @@ The password thus does NOT travel in plain text.
 ;; DOES not generate strings of 32 chars?
 (define/contract (make-salt [n 32])
   (() (number?) . ->* . string?)
-  (bytes->string/utf-8 
-   (base64-encode 
+  (bytes->string/utf-8
+   (base64-encode
     (list->bytes
      (build-list n (λ(n)(random 256))))
     "")))
 
 (define (encode-password pwd [salt #f])
   (unless salt (set! salt (get-salt)))
-  (bytes->string/utf-8 
+  (bytes->string/utf-8
    (md5 (string-append pwd salt))))
 
 (define (set-current-password pwd [salt #f])
@@ -70,7 +74,7 @@ The password thus does NOT travel in plain text.
 
 (define/contract (do-action action [other-query '()])
   ([string?] [(listof (cons/c symbol? string?))] . ->* . any)
-  (define query 
+  (define query
     (append other-query
             `((user     . ,(current-user))
               (password . ,(current-password))
@@ -79,12 +83,12 @@ The password thus does NOT travel in plain text.
   (define u
     (url
      "http" #f (server-address) (server-port) #t
-     (list (path/param (server-root-path) '()) 
+     (list (path/param (server-root-path) '())
            (path/param (server-version) '()))
      query
      #f))
   (log-debug "Url: ~v" (url->string u))
-  (define response 
+  (define response
     (call/input-url u get-pure-port (λ(p)(port->list read p))))
   (log-debug "Received response:~v" response)
   (match response
@@ -109,6 +113,10 @@ The password thus does NOT travel in plain text.
   (-> (listof vector?))
   (do-action "listcurrentgames"))
 
+(define/contract (get-ask-game-list)
+  (-> (listof vector?))
+  (do-action "listaskgames"))
+
 (define/contract (get-game id)
   (number? . -> . (or/c #f (is-a?/c game<%>)))
   (define lg (do-action "getgame" `((gameid . ,(number->string id)))))
@@ -123,11 +131,19 @@ The password thus does NOT travel in plain text.
                (user2 . ,(send g get-name2))
                (size  . ,(number->string (send g get-nb-cells)))
                (game  . ,(~s (send g game->list))))))
-    
+
+(define/contract (accept-game id)
+  (number? . -> . any)
+  (do-action "acceptgame" `((gameid . ,(number->string id)))))
+
+(define/contract (reject-game id)
+  (number? . -> . any)
+  (do-action "rejectgame" `((gameid . ,(number->string id)))))
+
 ; Should add finished, winner, etc. ?
 (define/contract (update-game game-id ply);game next-player winner
   (number? list? . -> . any)
-  (do-action "updategame" 
+  (do-action "updategame"
              `((gameid . ,(number->string game-id))
                (ply    . ,(~s ply)))))
 
