@@ -3,19 +3,14 @@
 @; MULTI-PAGE ??
 
 @(require scribble/manual
-          racket/runtime-path)
+          racket/runtime-path
+          (for-syntax racket/base))
 
 
 @(define towers @bold{Towers})
 
-@; OBSOLETE:
-@(define (img-name->image name)
-   (image (build-path 'up "img" name)))
-
 @(define-runtime-path screenshot-5x5-annnotated 
-   "../img-web/screenshot-5x5-annnotated.png"
-;   (build-path 'up "img" "screenshot-5x5-annnotated.png"))
-)
+   (build-path "img" "screenshot-5x5-annotated.png"))
 
 @title{@towers Rules}
 @;author+email["Laurent Orseau" "laurent.orseau@gmail.com" #:obfuscate? #t]
@@ -41,24 +36,26 @@ The size of the board ranges from 5x5 to 10x10.
 Here is a summary of the rules.
 Please read the following sections if it is not clear enough.
 
+When several pawns are on the same cell, they form a @emph{tower}.
+By extension, a pawn is a tower of height 1.
+
 @; TODO: add hotlinks to the related sections!
 @(itemlist
-  @item{The goal of the game is to capture the opponent's master.}
-  @item{The player has as many move points per turn as it has reserve pawns.}
-  @item{The player can use all or less than its total amount of move points.}
-  @item{Moving N pawns of M cells requires and uses N*M move points of the reserve.}
-  @item{Pawns can move on the 4 adjacent cells, but can do so several times per turn,
-        as long as the cell is not locked and there remain move points.}
-  @item{A pawn can move onto another pawn/tower of the same player to form a higher tower.}
-  @item{A pawn/tower can attack another pawn/tower of at most the same height. 
-        The attacked pawn/tower is removed from the board.}
-  @item{Attacking or raising a tower locks the destination cell.}
-  @item{No further action can be done with a locked cell.
+  @item{@bold{(goal)} The goal of the game is to capture the opponent's master.}
+  @item{@bold{(move points)} The player has as many move points per turn as it has reserve pawns.
+        It may use less than that number.}
+  @item{@bold{(move)} Towers can move to the 4 adjacent cells. It takes as many move points as the height of the tower.
+  A tower can move several times per turn.}
+  @item{@bold{(raise)} A pawn can move onto another tower of the same player to form a higher tower.}
+  @item{@bold{(attack)} A tower can attack another tower of at most the same height. 
+        The attacked tower is removed from the board, except if the attacker is the master,
+        in which case the captured tower raises the attacker's tower.}
+  @item{@bold{(lock)} Attacking or raising a tower locks the destination cell.
+        No further action can be done with a locked cell.
         A cell remains locked until the end of the player's turn.}
-  @item{Unused move-points/reserve-pawns can be imported onto the master.}
-  @item{Pawns can get out on the master tower one by one.}
-  @item{At the end of the player's turn, any pawn on the player's master returns to the reserve 
-        (even if the master is locked).}
+  @item{@bold{(import)} Unused move-points/reserve-pawns can be imported onto the master.}
+  @item{@bold{(master out)} Pawns can get out on the master tower one by one.}
+  @item{@bold{(export)} At the end of the player's turn, any pawn on the player's master returns to the reserve.}
   )
 
 @section{Official Rules}
