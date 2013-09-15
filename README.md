@@ -35,7 +35,7 @@ A 10x10 middle game:
         No further action can be done with a locked cell.
         A cell remains locked until the end of the player's turn.
   * **(import)** Unused move-points/reserve-pawns can be imported onto the master.
-  * **(master out)** Pawns can get out on the master tower one by one.
+  * **(master out)** Pawns can get out on the master tower one by one (right click and drag).
   * **(export)** At the end of the player's turn, any pawn on the player's master returns to the reserve.
 
 ## Detailed rules
