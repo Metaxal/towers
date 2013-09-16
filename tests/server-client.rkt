@@ -156,5 +156,6 @@
 (play-full-game "game1.twr" "plip" "plop" "plap" "plup")
 (play-full-game "game2.twr" "plip" "plop" "plap" "plup")
 (play-full-game "game3.twr" "plip" "plop" "plap" "plup")
+(play-full-game "game-tower-out1.twr" "plip" "plop" "plap" "plup")
 
 
