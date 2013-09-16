@@ -59,6 +59,7 @@
          dialog-create-user
          tf-new-user
          tf-new-pwd
+         tf-new-pwd2
          tf-new-email)
 
 (define (label-bitmap-proc l)
@@ -207,6 +208,9 @@
 (define horizontal-panel-41175 #f)
 (define message-41176 #f)
 (define tf-new-pwd #f)
+(define horizontal-panel-2367 #f)
+(define message-2368 #f)
+(define tf-new-pwd2 #f)
 (define horizontal-panel-45101 #f)
 (define message-45102 #f)
 (define tf-new-email #f)
@@ -414,6 +418,8 @@
          (tf-new-user-callback (lambda (text-field control-event) (void)))
          #:tf-new-pwd-callback
          (tf-new-pwd-callback (lambda (text-field control-event) (void)))
+         #:tf-new-pwd2-callback
+         (tf-new-pwd2-callback (lambda (text-field control-event) (void)))
          #:tf-new-email-callback
          (tf-new-email-callback (lambda (text-field control-event) (void)))
          #:button-create-user-ok-callback
@@ -2221,6 +2227,54 @@
      (parent horizontal-panel-41175)
      (label "")
      (callback tf-new-pwd-callback)
+     (init-value "")
+     (style
+      ((λ (l) (list* (first l) (second l) (third l)))
+       (list 'single 'horizontal-label '(password))))
+     (font (list->font (list 8 #f 'default 'normal 'normal #f 'default #f)))
+     (enabled #t)
+     (vert-margin 2)
+     (horiz-margin 2)
+     (min-width 200)
+     (min-height 0)
+     (stretchable-width #f)
+     (stretchable-height #f)))
+  (set! horizontal-panel-2367
+    (new
+     horizontal-panel%
+     (parent vertical-panel-41171)
+     (style '())
+     (enabled #t)
+     (vert-margin 0)
+     (horiz-margin 0)
+     (border 0)
+     (spacing 0)
+     (alignment (list 'right 'center))
+     (min-width 0)
+     (min-height 0)
+     (stretchable-width #t)
+     (stretchable-height #t)))
+  (set! message-2368
+    (new
+     message%
+     (parent horizontal-panel-2367)
+     (label (label-bitmap-proc (list "Confirm Password:" #f #f)))
+     (style '())
+     (font (list->font (list 8 #f 'default 'normal 'normal #f 'default #f)))
+     (enabled #t)
+     (vert-margin 2)
+     (horiz-margin 2)
+     (min-width 0)
+     (min-height 0)
+     (stretchable-width #f)
+     (stretchable-height #f)
+     (auto-resize #f)))
+  (set! tf-new-pwd2
+    (new
+     text-field%
+     (parent horizontal-panel-2367)
+     (label "")
+     (callback tf-new-pwd2-callback)
      (init-value "")
      (style
       ((λ (l) (list* (first l) (second l) (third l)))

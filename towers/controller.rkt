@@ -120,13 +120,15 @@
 ;;;;;;;;;;;;;;;
 
 (define (end-turn-callback)
-  (when (and (gui-can-play?)
-             (or (not (end-turn-draws?))
-                 (equal? 'yes
-                        (message-box "Draw game?"
-                                     "Passing your turn will draw this game.\nAre you sure you want to pass?"
-                                     main-frame
-                                     '(yes-no caution)))))
+  (when 
+      (and (gui-can-play?)
+           (or (not (end-turn-draws?))
+               (equal? 'yes
+                       (message-box 
+                        "Draw game?"
+                        "Passing your turn will draw this game.\nAre you sure you want to pass?"
+                        main-frame
+                        '(yes-no caution)))))
     (player-end-turn)
     (update)
     ))
@@ -480,7 +482,9 @@
              (not (user-current-player?)) ; Don't update if the current player is playing!
              (network-game?)
              (not replaying?))
-    (log-debug "Updating network game: current-player-name: ~a game-current-name: ~a user: ~a user-current-player: ~a"
+    (log-debug 
+     "Updating network game: current-player-name: ~a\
+ game-current-name: ~a user: ~a user-current-player: ~a"
                (send (current-player) get-name)
                (send current-game get-current-name)
                (current-user)
@@ -563,9 +567,12 @@
 
 (define (create-user-callback)
   (with-error-to-msg-box
-   (let ([l (send tf-new-user  get-value)]
-         [p (send tf-new-pwd   get-value)]
-         [e (send tf-new-email get-value)])
+   (let ([l  (send tf-new-user  get-value)]
+         [p  (send tf-new-pwd   get-value)]
+         [p2 (send tf-new-pwd2  get-value)]
+         [e  (send tf-new-email get-value)])
+     (unless (string=? p p2)
+       (error "Passwords do not match"))
      (network:create-user l p e)
      (network:set-user-password l p)
      (or (network:check-authentication)
