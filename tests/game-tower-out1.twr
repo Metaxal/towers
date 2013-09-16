@@ -1,0 +1,1 @@
+("2.0" (tower-out) 5 "Player 1" "Player 2" "Human" "Human" (((move 0 4 0 3 1)) ((move 1 0 2 0 1)) ((move 0 3 0 2 1)) ((move 0 0 0 1 1) end) ((move 0 3 0 2 1)) ()))
