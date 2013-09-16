@@ -1,4 +1,4 @@
-# ![Towers logo](img/towers-logo.png) 
+# ![Towers logo](../img/towers-logo.png) 
 
 Towers is an original board game for 2 players, written in Racket.
 
