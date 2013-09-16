@@ -2,7 +2,7 @@
 
 Towers is an original board game for 2 players, written in Racket.
 
-It is licensed under the GPLv3 (see COPYING)
+It is licensed under the GPLv3 (see COPYING).
 
 It contains 3 packages/collections:
   * **towers-lib**: Contains the game's rules, the players, the client connection.
