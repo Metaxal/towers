@@ -502,22 +502,19 @@
 
     ;; Does ending the game right now draws the game?
     (define/public (end-turn-draws?)
-      (let ([rev-plies (reverse plies)])
-        (and (empty? (first rev-plies))
-             (> (length rev-plies) 1)
-             (equal? (second rev-plies) '(end)))))
+      (match plies
+        [(list* _ ... '(end) '(end) '(end) (or '() '(())))
+         #t]
+        [else #f]))
 
+    ;; For a game to be a draw, we must have the last 4 plies to be a pass:
+    ;; If each player has already passed and still passes, knowing that the opponent
+    ;; will pass, then everyone will still pass.
     (define (try-draw-game)
-      (let* ([rev-plies (reverse plies)]
-             [rev-plies (if (empty? rev-plies)
-                            '()
-                            (if (empty? (first rev-plies))
-                                (rest rev-plies)
-                                rev-plies))])
-        (when (and (>= (length rev-plies) 2)
-                   (equal? '(end) (first rev-plies))
-                   (equal? '(end) (second rev-plies)))
-          (set! winner 'draw))))
+      (match plies
+        [(list* _ ... '(end) '(end) '(end) '(end) (or '() '(())))
+         (set! winner 'draw)]
+        [else (void)]))
 
 
     (define/public (player-end-turn #:test? [test? #f])
@@ -598,7 +595,7 @@
                    (length (list-ref plies
                                      (sub1 (length plies)))))))
           ; we are at the end of the game
-          (try-draw-game)
+          (begin (replaying? #f) (try-draw-game))
           ; else, not at the end, we are hence replaying
           (replaying? #t)
           ))
