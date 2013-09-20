@@ -279,13 +279,13 @@
                             #:x (- x HALF-CELL-DX)
                             #:y (- y HALF-CELL-DY)
                             )
-                ;                ; The following makes the above drawing very slow!!
-                ;                ; Weird: not true if the master is being moved!
-                ;                (draw-bitmap/mask dc
-                ;                                  selected-tower-bmp
-                ;                                  (- x HALF-CELL-DX)
-                ;                                  (- y HALF-CELL-DY)
-                ;                                  )
+                ; The following makes the above drawing very slow!!
+                ; Weird: not true if the master is being moved!
+                #;(draw-bitmap/mask dc
+                                  selected-tower-bmp
+                                  (- x HALF-CELL-DX)
+                                  (- y HALF-CELL-DY)
+                                  )
                 )))
         )))
 

@@ -105,8 +105,8 @@
  (λ _ (website-callback))
  #:menu-item-bug-report-callback
  (λ _ (bug-report-callback))
- #:menu-item-stats-callback
- (λ _ (stats-callback))
+ #;#:menu-item-stats-callback
+ #;(λ _ (stats-callback))
 
  #:menu-item-undo-callback
  (λ _ (undo-callback))

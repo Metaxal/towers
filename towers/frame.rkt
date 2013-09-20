@@ -1,7 +1,7 @@
 #lang racket/base
 
 ;;==========================================================================
-;;===                Code generated with MrEd Designer 3.11              ===
+;;===                Code generated with MrEd Designer 3.12              ===
 ;;===              https://github.com/Metaxal/MrEd-Designer              ===
 ;;==========================================================================
 
@@ -108,12 +108,11 @@
 (define separator-menu-item-3191 #f)
 (define menu-item-exit #f)
 (define menu-network #f)
-(define menu-item-user #f)
-(define menu-item-create #f)
 (define menu-item-games #f)
 (define menu-item-network-new-game #f)
-(define separator-menu-item-3877 #f)
-(define menu-item-stats #f)
+(define separator-menu-item-4592 #f)
+(define menu-item-user #f)
+(define menu-item-create #f)
 (define menu-edit #f)
 (define menu-item-undo #f)
 (define separator-menu-item-3841 #f)
@@ -275,14 +274,6 @@
          (menu-item-exit-demand-callback (lambda (item) (void)))
          #:menu-network-demand-callback
          (menu-network-demand-callback (lambda (m) (void)))
-         #:menu-item-user-callback
-         (menu-item-user-callback (lambda (item event) (void)))
-         #:menu-item-user-demand-callback
-         (menu-item-user-demand-callback (lambda (item) (void)))
-         #:menu-item-create-callback
-         (menu-item-create-callback (lambda (item event) (void)))
-         #:menu-item-create-demand-callback
-         (menu-item-create-demand-callback (lambda (item) (void)))
          #:menu-item-games-callback
          (menu-item-games-callback (lambda (item event) (void)))
          #:menu-item-games-demand-callback
@@ -291,10 +282,14 @@
          (menu-item-network-new-game-callback (lambda (item event) (void)))
          #:menu-item-network-new-game-demand-callback
          (menu-item-network-new-game-demand-callback (lambda (item) (void)))
-         #:menu-item-stats-callback
-         (menu-item-stats-callback (lambda (item event) (void)))
-         #:menu-item-stats-demand-callback
-         (menu-item-stats-demand-callback (lambda (item) (void)))
+         #:menu-item-user-callback
+         (menu-item-user-callback (lambda (item event) (void)))
+         #:menu-item-user-demand-callback
+         (menu-item-user-demand-callback (lambda (item) (void)))
+         #:menu-item-create-callback
+         (menu-item-create-callback (lambda (item event) (void)))
+         #:menu-item-create-demand-callback
+         (menu-item-create-demand-callback (lambda (item) (void)))
          #:menu-item-undo-callback
          (menu-item-undo-callback (lambda (item event) (void)))
          #:menu-item-undo-demand-callback
@@ -766,26 +761,6 @@
      (label "&Network")
      (help-string "Network")
      (demand-callback menu-network-demand-callback)))
-  (set! menu-item-user
-    (new
-     menu-item%
-     (parent menu-network)
-     (label "&Login")
-     (callback menu-item-user-callback)
-     (shortcut #\L)
-     (help-string "Login")
-     (demand-callback menu-item-user-demand-callback)
-     (shortcut-prefix '(ctl))))
-  (set! menu-item-create
-    (new
-     menu-item%
-     (parent menu-network)
-     (label "&Create Network Player")
-     (callback menu-item-create-callback)
-     (shortcut #f)
-     (help-string "Item")
-     (demand-callback menu-item-create-demand-callback)
-     (shortcut-prefix '(ctl))))
   (set! menu-item-games
     (new
      menu-item%
@@ -806,17 +781,27 @@
      (help-string "New network game")
      (demand-callback menu-item-network-new-game-demand-callback)
      (shortcut-prefix '(ctl shift))))
-  (set! separator-menu-item-3877
+  (set! separator-menu-item-4592
     (new separator-menu-item% (parent menu-network)))
-  (set! menu-item-stats
+  (set! menu-item-user
     (new
      menu-item%
      (parent menu-network)
-     (label "&Statistics (online)")
-     (callback menu-item-stats-callback)
+     (label "&Login")
+     (callback menu-item-user-callback)
+     (shortcut #\L)
+     (help-string "Login")
+     (demand-callback menu-item-user-demand-callback)
+     (shortcut-prefix '(ctl))))
+  (set! menu-item-create
+    (new
+     menu-item%
+     (parent menu-network)
+     (label "&Create Network Player")
+     (callback menu-item-create-callback)
      (shortcut #f)
      (help-string "Item")
-     (demand-callback menu-item-stats-demand-callback)
+     (demand-callback menu-item-create-demand-callback)
      (shortcut-prefix '(ctl))))
   (set! menu-edit
     (new

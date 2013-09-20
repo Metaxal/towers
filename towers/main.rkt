@@ -27,7 +27,11 @@
                            "Sets the preference file"
                            (pref-file (path->complete-path
                                        file
-                                       (find-system-path 'orig-dir)))])
+                                       (find-system-path 'orig-dir)))]
+   [("-d" "--debug") "Shows debugging information"
+    (define tll-rc (make-log-receiver towers-lib-logger 'debug))
+    (define tlt-rc (make-log-receiver towers-logger 'debug))
+    (loop-receive tll-rc tlt-rc)])
 
   (start-splash splash-path "Towers" 700)
   (define gui-main (dynamic-require gui.rkt 'main))

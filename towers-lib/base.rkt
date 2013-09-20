@@ -72,7 +72,8 @@
    (thread
     (λ()(let loop ()
           (define v (apply sync receivers))
-          (printf "~a [~a]\n" (vector-ref v 1) (vector-ref v 0))
+          #;(printf "~a [~a]\n" (vector-ref v 1) (vector-ref v 0))
+          (displayln (vector-ref v 1))
           (loop))))))
 
 (define no-logger (make-logger 'no-logger))
