@@ -131,6 +131,8 @@
                         '(yes-no caution)))))
     (player-end-turn)
     (update)
+    (when (network-game?)
+      (update-columns-box-games))
     ))
 
 (define (gui-resign)
@@ -554,11 +556,13 @@
        [(list widget key pref->gui gui->pref)
         (send prefs set key (gui->pref (send widget get-value)))]))
    (send prefs save)
-   (or (network:check-authentication)
+   (send dialog-preferences show #f)
+   (or (not (send prefs get 'user))
+       (not (send prefs get 'password))
+       (network:check-authentication)
        (error "Authentication failed"))
    (set-auto-end-turn)
-   (update-frame-labels)
-   (send dialog-preferences show #f)))
+   (update-frame-labels)))
 
 
 ;===================;
