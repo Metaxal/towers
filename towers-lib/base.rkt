@@ -23,9 +23,9 @@
 (define prefs
   (new preferences% [file (make-config-file-path "towers" "prefs.rktd")]
        [default-preferences
-         '((server-address    . "localhost")
+         '((server-address    . "metaxal.dyndns.org" #;"localhost")
            (server-root-path  . "towers")
-           (server-port       . 8080)
+           (server-port       . 8085 #;8080)
            (server-version    . "2.0")
            (user              . #f)
            (password          . #f)

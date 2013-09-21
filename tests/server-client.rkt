@@ -1,6 +1,6 @@
 #lang racket
 (require (prefix-in db: towers-server/db)
-         (except-in towers-server/server create-user)
+         towers-server/server
          towers-lib/base
          towers-lib/connection
          towers-lib/game
@@ -124,6 +124,7 @@
     (without-logger (list-game->game (file->value game-file))))
   ; The game we will play through the network
   (define g0 (new network-game% [nb-cells (send g-ref get-nb-cells)]
+                  [rules (send g-ref get-rules)]
                   [player1-class "Human"] [player2-class "Human"]
                   [player1-name user1] [player2-name user2]))
   

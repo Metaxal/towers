@@ -116,8 +116,10 @@
 ;;; Preferences ;;;
 ;;;;;;;;;;;;;;;;;;;
 
-(send* prefs
-  (set 'auto-update         #t #:save? #f)
-  (set 'auto-update-notify  #t #:save? #f)
-  (set 'auto-end-turn       #f #:save? #f))
+(define (set-gui-default-prefs)
+  (log-debug "Setting default gui prefs")
+  (send* prefs
+    (set 'auto-update         #t #:save? #f)
+    (set 'auto-update-notify  #t #:save? #f)
+    (set 'auto-end-turn       #f #:save? #f)))
 

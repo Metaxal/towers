@@ -10,6 +10,8 @@
          towers-lib/game
          towers-lib/player
          bazaar/list
+         bazaar/string
+         bazaar/net/smtp
          web-server/servlet
          web-server/servlet-env
          web-server/page
@@ -22,14 +24,30 @@
 
 (provide start-server
          run-server
-         create-user
+         create-user/cmd-line
          create-towers-database
          create-preferences
          towers-server-logger)
 
 (define-logger towers-server)
 
+(define smtp-send #f)
+
 ;; WARNING: http://docs.racket-lang.org/db/using-db.html?q=mysql-connect#%28part._intro-servlets%29
+
+(define (create-user user pwd salt email)
+  (log-info "Creating user: ~a" user)
+  ; TODO: send a confirmation email with a token
+  ; (plus ask to enter a word on the webpage?)
+  (define res
+    (if (< (string-length user) 2)
+        (fail "User name must be at least 2 letters long.")
+        (db:create-user user pwd salt email)))
+  (when smtp-send
+    (smtp-send (send prefs get 'email-to)
+               "[Towers] create-user"
+               (format "New user: ~a" user)))
+  res)
 
 (define (update-game user game-id ply)
   (define lg (db:get-game user game-id))
@@ -49,6 +67,14 @@
   ;todo:
   ; send email to next player
   )
+
+(define (create-game user user1 user2 size game)
+  (define id (db:create-game user user1 user2 size game user1))
+  (when smtp-send
+    (smtp-send (send prefs get 'email-to)
+               "[Towers] create-game"
+               (format "~a created a new game #~a: ~a vs ~a" user id user1 user2)))
+  id)
 
 (define (fail . msgs)
     (list
@@ -75,12 +101,7 @@
           (cond [(not user)
                  (fail "Username must be provided")]
                 [(equal? action "newuser")
-                 (log-info "Creating user: ~a" user)
-                 ; TODO: send a confirmation email with a token
-                 ; (plus ask to enter a word on the webpage?)
-                 (if (< (string-length user) 2)
-                     (fail "User name must be at least 2 letters long.")
-                     (db:create-user user pwd (get-value 'salt) (get-value 'email)))]
+                 (create-user user pwd (get-value 'salt) (get-value 'email))]
                 [(equal? action "getsalt")
                  (or (db:get-salt user)
                      (fail "Could not retrieve salt for user " user))]
@@ -91,9 +112,8 @@
                        [("getplayers")
                         (db:get-players)]
                        [("newgame")
-                        (define user1 (get-value 'user1))
-                        (db:create-game user user1 (get-value 'user2)
-                                        (get-value 'size) (get-value 'game) user1)]
+                        (create-game user (get-value 'user1) (get-value 'user2)
+                                     (get-value 'size) (get-value 'game))]
                        [("getgame")
                         (db:get-game user (get-value 'gameid))]
                        [("acceptgame")
@@ -137,18 +157,24 @@
   (db:close-connection))
 
 (define (run-server)
-  (load-preferences)
   (db:set-auto-connection)
+  (define smtp-server (send prefs get 'smtp-server #f))
+  (when smtp-server
+    (set! smtp-send
+          (make-smtp-send
+           smtp-server
+           (send prefs get 'email-from)
+           #:auth-user (send prefs get 'smtp-user)
+           #:auth-passwd (send prefs get 'smtp-password)
+           #:port-no (send prefs get 'smtp-port))))
   (start-server))
 
-(define (create-user user pwd email)
+(define (create-user/cmd-line user pwd email)
   (log-info "Creating user ~a <~a>" user email)
-  (load-preferences)
   (db:set-auto-connection)
   (db:create-user user pwd (make-salt) email))
 
 (define (create-towers-database)
-  (load-preferences)
   (log-info "Creating database: ~a\n" (send prefs get 'database))
   (db:set-connection (send prefs get 'mysql-user)
                      (send prefs get 'mysql-password)
@@ -160,16 +186,26 @@
 (define (create-preferences)
   (define keys
     `((mysql-user "root")
-      (mysql-password "mysql")
+      (mysql-password "")
       (database "towers")
       (server-address "localhost")
       (server-root-path "towers")
       (server-version "2.0")
-      (server-port 8080 ,number->string ,string->number)))
+      (server-port 8080 #f ,number->string ,string->number)
+      (smtp-server #f "(Enter \"no\" to disable emails)" 
+                   ,(λ(s)(string-or-false->string s "no"))
+                   ,(λ(s)(string->string-or-false s "no")))
+      (smtp-user "")
+      (smtp-password "")
+      (smtp-port 25 #f ,number->string ,string->number)
+      (email-from "")
+      (email-to "")
+      ))
 
-  (define (ask key default [->str values] [str-> values])
+  ; This could well go into bazaar/preferences.rkt
+  (define (ask key default [msg #f] [->str values] [str-> values])
     (define v0 (send prefs get key default))
-    (printf "~a [~a]: " key (->str v0))
+    (printf "~a [~a]~a: " key (->str v0) (or msg ""))
     (define str (read-line))
     (send prefs set key (if (equal? str "")
                             v0

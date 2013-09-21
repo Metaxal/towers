@@ -17,6 +17,7 @@
          towers-lib/player
          towers-lib/player-ai1
 
+         bazaar/string
          bazaar/date
          bazaar/values
          bazaar/mutation
@@ -487,10 +488,10 @@
     (log-debug 
      "Updating network game: current-player-name: ~a\
  game-current-name: ~a user: ~a user-current-player: ~a"
-               (send (current-player) get-name)
-               (send current-game get-current-name)
-               (current-user)
-               (user-current-player?))
+     (send (current-player) get-name)
+     (send current-game get-current-name)
+     (current-user)
+     (user-current-player?))
     (update-network-game)
     (when (and (user-current-player?)
                (send prefs get 'auto-update-notify))
@@ -517,10 +518,7 @@
   `((,cb-prefs-auto-update        auto-update)
     (,cb-prefs-auto-update-notif  auto-update-notify)
     (,cb-prefs-auto-end-turn      auto-end-turn)
-    (,tf-prefs-user  user
-                     ,(λ(x) (or x ""))
-                     ,(λ(x) (and (not (equal? x ""))
-                                 x)))
+    (,tf-prefs-user  user ,string-or-false->string ,string->string-or-false)
   ; calls get-salt, so user must be set before-hand, and thus must be before:
     (,tf-prefs-pwd  password
                     ,(λ(x) (if x no-change-pass ""))

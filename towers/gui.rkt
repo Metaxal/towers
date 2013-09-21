@@ -202,6 +202,7 @@
  )
 
 (define (gui-init)
+  (set-gui-default-prefs)
   (load-preferences)
 
   (set-columns-box-games
