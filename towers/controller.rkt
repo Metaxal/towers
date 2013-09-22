@@ -114,7 +114,8 @@
    (resize-main-frame)
    (update-game-buttons)
    (draw-board)
-   (send current-player on-play-move)
+   (unless replay?
+     (send current-player on-play-move))
    ))
 
 ;;;;;;;;;;;;;;;
