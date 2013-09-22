@@ -114,6 +114,7 @@
    (resize-main-frame)
    (update-game-buttons)
    (draw-board)
+   (send current-player on-play-move)
    ))
 
 ;;;;;;;;;;;;;;;
@@ -138,10 +139,10 @@
 
 (define (gui-resign)
   (when (and (gui-can-play?)
-             (equal? 'yes
-                     (message-box "Resign?"
-                                  "Are you sure you want to resign this game?"
-                                  #f '(caution yes-no))))
+             (eq? 'yes
+                  (message-box "Resign?"
+                               "Are you sure you want to resign this game?"
+                               #f '(caution yes-no))))
     (resign)
     (update)))
 

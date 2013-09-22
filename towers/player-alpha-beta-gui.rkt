@@ -37,14 +37,10 @@
                               [range 100]
                               [label "Searching..."]
                               [style '(horizontal vertical-label)]))
-    ; TODO: gauge...
     (define bt-stop-search (new button% [parent frame-search]
                                 [label "Stop search now!"]
                                 [callback (λ _ (stop-search))]
                                 ))
-
-    ;(define/override (say str)
-    ;  (message-box "Towers" str))
 
     (define/override (update-view)
       (when (eq? current-game game)
@@ -54,9 +50,9 @@
 
     (define/override (on-play-move)
       (send frame-search show #t) ; thread because a dialog% locks the thread
-      (thread (λ()(super on-play-move)
-                (send frame-search show #f)
-                ))
+      (thread (λ()
+                (super on-play-move)
+                (send frame-search show #f)))
       (let loop ()
         (when (send frame-search is-shown?)
           (sleep/yield .3)

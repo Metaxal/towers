@@ -41,8 +41,3 @@
 (define-player-class player-server-test% "ServerTest"
   (class player% (super-new)
     ))
-
-#| Tests | #
-(define o (make-object player-human% "moi"))
-o
-;|#

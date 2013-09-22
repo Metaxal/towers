@@ -42,10 +42,10 @@ but number of simulations should be lower.
 Well... it may be a bit faster for moves that use many move points,
 but it's the same as before for all that take only 1 point
 (because for such a move, all the process must be done again).
-For the very first "move" on a 10x10, there is at least
+For the very first "move" on a 10x10, there are at least
 185*2+3*8+4=398 different configurations (for moving only one pawn).
 Approximately the same number as Go, but now we must do the same
-for the remaing points (which depends on the chosen move).
+for the remaining points (which depends on the chosen move).
 Using this method should still gain time, because we remove all duplicate paths
 that go to the same destination cell (which path is chosen is not important
 when moving only one cell).
@@ -55,7 +55,7 @@ when moving only one cell).
 since we have the whole sequence
 (to the cost of losing some better options, but should not be that much a problem,
 since the first played move has much effect on the next ones?)
-Would be muche faster
+Would be much faster
 
 - pondérer une valeur min-max par sa longueur
 
