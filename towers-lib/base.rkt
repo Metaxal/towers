@@ -25,7 +25,7 @@
        [default-preferences
          '((server-address    . "metaxal.dyndns.org" #;"localhost")
            (server-root-path  . "towers")
-           (server-port       . 8085 #;8080)
+           (server-port       . 8080)
            (server-version    . "2.0")
            (user              . #f)
            (password          . #f)
