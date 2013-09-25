@@ -23,20 +23,19 @@ A 10x10 middle game:
 ## Quick summary of the official rules
 
   * **(goal)** The goal of the game is to capture the opponent's master.
-  * **(move points)** The player has as many move points per turn as it has reserve pawns.
-        It may use less than that number.
-  * **(move)** Towers can move to the 4 adjacent cells. It takes as many move points as the height of the tower.
+  * **(move points)** The player has as many move points per turn as it has reserve pawns, and may use less than that number.
+  * **(move)** Towers can move to the 4 adjacent cells, using as many move points as the height of the tower.
   A tower can move several times per turn.
   * **(raise)** A pawn can move onto another tower of the same player to form a higher tower.
-  * **(attack)** A tower can attack another tower of at most the same height. 
-        The attacked tower is removed from the board, except if the attacker is the master,
-        in which case the captured tower raises the attacker's tower.
+  * **(raise master)** The master can move only onto a single pawn of the player.
+  * **(attack)** A tower can attack an opponent's tower of at most the same height, and takes its place on the board.
+  * **(capture)** If the master tower attacks an opponent's tower, the opponent's tower is captured and raises the master tower instead of removing it from the board.
   * **(lock)** Attacking or raising a tower locks the destination cell.
         No further action can be done with a locked cell.
         A cell remains locked until the end of the player's turn.
+  * **(export)** At the end of the player's turn, any pawn on the player's master returns to the reserve.
   * **(import)** Unused move-points/reserve-pawns can be imported onto the master.
   * **(master out)** Pawns can get out on the master tower one by one (right click and drag).
-  * **(export)** At the end of the player's turn, any pawn on the player's master returns to the reserve.
 
 ## Detailed rules
 
