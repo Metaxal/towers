@@ -89,7 +89,7 @@
       (send player2 get-name))
     (define/public (get-current-name)
       (and current-player (send current-player get-name)))
-
+    
     (define/public (game->list)
       (list version rules nb-cells
             (get-name1) (get-name2)
@@ -122,8 +122,7 @@
         (surround! "<" s ">"))
       (~a s #:align 'center #:min-width 7))
 
-    ; This should be in a towers-txt collection? (not sure, could still be useful for the server)
-    (define/public (->string)
+    (define/public (->text)
       (define tb
         (table-framed
          (cons '< (append
@@ -141,10 +140,13 @@
                             (cell->string row col c))))
           (table-mid-line tb))
          (list (table-last-line tb))))
-      (string-join ll "\n" #:after-last "\n"))
+      (string-append
+       (send player2 ->text) "\n"
+       (string-join ll "\n") "\n"
+       (send player1 ->text) "\n"))
 
     (define/public (display-text)
-      (display (->string)))
+      (display (->text)))
 
     ;;;;;;;;;;;;;
     ;;; Cells ;;;
@@ -305,28 +307,22 @@
     ;;;;;;;;;;;;;;;
 
     (define/public (try-switch-player [force #f] [locked '()])
-      (let ([switch? (or force winner
-                         (and (replaying?)
-                              (player-must-end-turn?)))])
-        (when switch?
-          (export-pawns)
-
-          (send current-player end-turn)
-
-          (new-ply)
-
-          (set! locked-cells locked)
-          (set! nb-imported 0)
-          (set! nb-exported 0)
-
-          (set! current-player (send current-player get-opponent))
-          (send current-player init-turn)
-
-          (unless (replaying?)
-            (if winner
-                (begin (send player1 on-end-game winner)
-                       (send player2 on-end-game winner))
-                (send current-player on-play-move)))))) ; tail position
+      (when (or force
+                (and (replaying?)
+                     (player-must-end-turn?)))
+        (export-pawns)
+        
+        (send current-player end-turn)
+        
+        (new-ply)
+        
+        (set! locked-cells locked)
+        (set! nb-imported 0)
+        (set! nb-exported 0)
+        
+        (set! current-player (send current-player get-opponent))
+        (send current-player init-turn)
+        ))
 
     (define/public (current-ply-only-imports?)
       (andmap (match-lambda [(list 'import n) #t]
@@ -353,6 +349,7 @@
         (if test?
             ; return value:
             can-import?
+            ; do the import
             (when can-import?
               (set-cell-num-pawns! mat ym xm (+ (cell-num-pawns mc) n-import))
               (add-to-current-reserve (- n-import))
@@ -439,17 +436,7 @@
             ; else, do move.
             ; Below there should be no test for legal moves, only effects.
             (when (and (can-current-player-play?)
-                       can-move?
-                       ; /!\ These check-rule?s should be in the test above, not here!
-                       ;(check-rule? 'no-tower-out (or (cell-has-master? ci) (not splitting?)))
-                       ;(check-rule? 'raise-one (not (or (and raising? (> move-nb-pawns 1))
-                       ;                                 ; cannot put the master on a tower.
-                       ;                                 (and move-master? raising? (> cf-pawns 1)))
-                       ;                             ))
-                       ;(check-rule? 'no-master-win (not (and move-master? (cell-has-master? cf))))
-                       ;(check-rule? 'still-tower-out
-                       ;             (not (and splitting? (moved-cell? (list xi yi)))))
-                       )
+                       can-move?)
               (set-cell-num-pawns! mat yi xi ci-remaining-pawns)
               (when (= ci-remaining-pawns 0)
                 (matrix-set! mat yi xi 0)) ; empty cell
@@ -516,35 +503,33 @@
          (set! winner 'draw)]
         [else (void)]))
 
+    ;; Plays the 'end move, but does not actually ends the turn
+    (define/public (play-end-turn)
+      (unless (player-must-end-turn?)
+        (add-move-to-current-ply 'end)
+        (send current-player set-move-points 0))
+      (try-switch-player))
 
-    (define/public (player-end-turn #:test? [test? #f])
-      (cond [test?]
-            [else
-             ; first, try to end the current turn normally
-             (unless (player-must-end-turn?)
-               (add-move-to-current-ply 'end)
-               (unless (replaying?)
-                 (try-draw-game)))])
-
+    ;; Actually ends the player's turn
+    (define/public (end-player-turn)
+      ; first, try to end the current turn normally
+      (unless (player-must-end-turn?)
+        (play-end-turn)
+        (unless (replaying?)
+          (try-draw-game)))
+      ; Then force to switch the players
       (try-switch-player #t)) ; force end turn ; tail position
 
-    (define/public (resign #:test? [test? #f])
-      (cond [test?]
-            [else
-             (set! winner (send current-player get-opponent))
-             (replace-current-ply '(resign))
-             (try-switch-player #t)])) ; force end turn ; tail position
-
+    (define/public (resign)
+      (set! winner (send current-player get-opponent))
+      (replace-current-ply '(resign))
+      (try-switch-player #t)) ; force end turn ; tail positions
 
     ; Can only undo the moves of the last ply
     (define/public (undo)
       (let ([current-ply (get-current-ply)])
         (unless (empty? current-ply)
-          (replace-current-ply (reverse (rest (reverse current-ply)))))))
-
-    ;;;;;;;;;;;;;;;;;
-    ;;; Replaying ;;;
-    ;;;;;;;;;;;;;;;;;
+          (replace-current-ply (remove-last current-ply)))))
 
     (define/public (play-move mv #:test? [test? #f])
       (log-debug "play-move~a: ~a" (if test? " (test)" "") mv)
@@ -552,15 +537,19 @@
         [(list 'move xi yi xf yf n)
          (move xi yi xf yf n #:test? test?)]
         ['end
-         (player-end-turn)]
+         (or test? (play-end-turn))]
         [(list 'import n)
          (import-pawn n #:test? test?)]
         ['import
          (import-pawn #:test? test?)]
         ['resign
-         (resign)]
+         (or test? (resign))]
         [else (error "Unknown move" mv)]
         ))
+    
+    ;;;;;;;;;;;;;;;;;
+    ;;; Replaying ;;;
+    ;;;;;;;;;;;;;;;;;
 
     ;; ply: list of moves
     ;; We consider that the ply contains only legal moves!
@@ -627,8 +616,6 @@
         (let ([x (+ xc dx)] [y (+ yc dy)])
           (matrix-set! smat y x (list xc yc)) ; for backward-path
           (list x y))))
-
-
 
     (define/public (src-move-points player [move-points #f])
       (cond [(eq? move-points 'all) (send player get-num-pawns-reserve)]
@@ -874,7 +861,7 @@
 
         (set! current-player player2) ; will be switched
 
-        (try-switch-player ; also calls the play method of the current-player
+        (try-switch-player
          #t ; force switch
          (if (specific-rule? 'no-first-lock-master)
              '()
@@ -999,7 +986,7 @@
   free-cell-path-list
   can-current-player-play?
   end-turn-draws?
-  player-end-turn
+  end-player-turn
   resign
   can-import?
   import-pawn

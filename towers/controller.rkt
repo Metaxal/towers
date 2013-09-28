@@ -115,12 +115,31 @@
    (update-game-buttons)
    (draw-board)
    (unless replay?
-     (send current-player on-play-move))
+     (gui-play-ply))
    ))
 
 ;;;;;;;;;;;;;;;
 ;;; Actions ;;;
 ;;;;;;;;;;;;;;;
+
+(define (gui-play-ply)
+  ; on-play-ply is implemented for automatic players
+  ; but not for human players, which go through the GUI
+  (send current-player on-play-ply
+        #:between update
+        #:after gui-end-turn))
+
+(define (gui-end-turn [force? #f])
+  (when (or force? (player-must-end-turn?))
+    (end-player-turn))
+  (update)
+  (unless (winner)
+    (gui-play-ply)))
+
+(define (gui-end-move)
+  (when (and (auto-end-turn) (player-must-end-turn?)
+             (player-human? current-player))
+    (gui-end-turn)))
 
 (define (end-turn-callback)
   (when 
@@ -132,8 +151,7 @@
                         "Passing your turn will draw this game.\nAre you sure you want to pass?"
                         main-frame
                         '(yes-no caution)))))
-    (player-end-turn)
-    (update)
+    (gui-end-turn #t)
     (when (network-game?)
       (update-columns-box-games))
     ))
@@ -145,7 +163,7 @@
                                "Are you sure you want to resign this game?"
                                #f '(caution yes-no))))
     (resign)
-    (update)))
+    (gui-end-turn)))
 
 (define (gui-import)
   (when (gui-can-play?)
@@ -193,7 +211,6 @@
 ; * * * * Graphics Controller * * * *
 ; ***********************************
 
-
 (define (select-cell xc yc [nbp #f])
   (let* ([c (board-ref board xc yc)]
          [pos (list xc yc)]
@@ -221,10 +238,7 @@
               selected-cell)
      (unless (equal? selected-cell (list xc yc))
        (move (first selected-cell) (second selected-cell) xc yc nb-selected-pawns)
-       (when (and (auto-end-turn) (player-must-end-turn?)
-                  (player-human? current-player))
-         (player-end-turn))
-       )
+       (gui-end-move))
      (set-selected-cell #f)
      (update)
      )))
