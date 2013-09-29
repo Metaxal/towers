@@ -90,7 +90,7 @@
     ;; end-turn-first? : first end the turn of the previous player before the first simulation?
     (define (simu-game-ply game ply-depth move-depth
                            alpha beta color)
-      (define (log-debug-depth fmt #:ply [ply #f] . args )
+      #;(define (log-debug-depth fmt #:ply [ply #f] . args )
         (log-alpha-beta-debug 
          (apply format (string-append (make-string (add1 ply-depth) #\o)
                                       (if ply (make-string (add1 (length ply)) #\.) "")
@@ -128,7 +128,7 @@
                     (simu-game-ply game (add1 ply-depth) (add1 move-depth)
                                    (- beta) (- alpha) color #;(- color)))
                   (set! ply-value (- ply-value)) ; negamax
-                  (when (= 1 ply-depth)
+                  #;(when (= 1 ply-depth)
                     (log-debug-depth "ply: ~a alpha: ~a" (reverse rev-ply) ply-value))
                   (values rev-ply ply-value)]
                  
