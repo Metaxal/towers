@@ -7,7 +7,6 @@
 (require towers-lib/player-base
          towers-lib/player-alpha-beta
          towers-lib/game
-         "base.rkt"
          "frame.rkt"
          "graphics.rkt"
          racket/gui/base
@@ -18,7 +17,7 @@
   (class* player-alpha-beta% (player-gui<%>)
     (super-new)
 
-    (inherit-field depth-max game)
+    (inherit-field ply-depth-max game)
     (inherit say stop-search get-nb-move-remaining get-nb-move-total)
 
     (define diag (new dialog% [parent main-frame] [label "Difficulty"]))
@@ -64,6 +63,6 @@
 
     ; asks for difficulty level
     (send diag show #t)
-    (set! depth-max (+ 1 (send lb-difficulty get-selection)))
+    (set! ply-depth-max (+ 1 (send lb-difficulty get-selection)))
 
     ))

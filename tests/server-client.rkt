@@ -87,7 +87,7 @@
   (debug-game g1)
 
   (send g1 play-move '(move 0 3 0 2 #f))
-  (send g1 play-move 'end)
+  (send g1 end-player-turn)
   (log-debug "Plies: ~a" (send g1 get-plies))
   (debug-game g1)
 
@@ -97,21 +97,20 @@
 
   ;; Illegal because not logged in as plap!
   (send g2 play-move '(move 0 1 0 2 #f))
-  ;(send g2 play-move 'end) ; warning ! Will switch the players!
   (debug-game g2)
 
   (set-user-password "plap" "plup")
   (check-true (check-authentication))
   (log-debug "Current-name: ~a" (send g2 get-current-name))
   (send g2 play-move '(move 0 1 0 2 #f)) ; Does not work?!
-  (send g2 play-move 'end)
+  (send g2 end-player-turn)
   (debug-game g2)
 
   (log-debug "Get game g3")
   (set-user-password "plip" "plop")
   (define g3 (get-game net-id))
   (send g3 play-move '(move 3 4 2 4 #f)) ; Does not work?!
-  (send g3 play-move 'end)
+  (send g3 end-player-turn)
   (debug-game g3)
 
   (define g4 (get-game net-id))
@@ -135,7 +134,7 @@
   (set-user-password user2 pwd2)
   (accept-game net-id)
 
-  (log-debug "Beginning game\n\n")
+  (log-debug "Beginning game ~a\n\n" game-file)
   (for ([ply plies]
         [user (in-cycle (list user1 user2))]
         [pwd (in-cycle (list pwd1 pwd2))])
@@ -146,7 +145,7 @@
     (send g play-ply ply)
     (unless (send g new-ply?)
       (log-debug "Forcing end move")
-      (send g play-move 'end))
+      (send g end-player-turn))
     (debug-game g))
 
   (define g-end (get-game net-id))

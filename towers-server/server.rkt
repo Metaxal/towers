@@ -58,7 +58,7 @@
   (when (send g play-ply ply) ; if illegal move, does nothing
     (log-debug "Plies2: ~a" (send g get-plies))
     (unless (send g new-ply?)
-      (send g play-move 'end)) ;force end the current player's turn, if not already a new ply
+      (send g end-player-turn)) ;force end the current player's turn, if not already a new ply
     (log-debug "Plies3: ~a" (send g get-plies))
     (define winner (send g get-winner))
     (db:update-game user game-id (send g game->list)

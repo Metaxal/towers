@@ -49,7 +49,7 @@ does this move imply bad things?
              play-move
              play-path
              master-attacked?
-             say sayf
+             say
              )
 
     ;; takes the first element of l if it exists,
@@ -216,7 +216,7 @@ does this move imply bad things?
         ;; Mirror the number of reserve pawns of the opponent
         (when (< num-pawns-reserve (send opponent get-num-pawns-reserve))
           (unless (for/or ([path-to-master (send game find-raise-path* master-pos)])
-                    (sayf "try path ~a" path-to-master)
+                    (say "try path ~a" path-to-master)
                     (try-safe-path path-to-master))
             (say "Cannot export pawn :(")))
 
@@ -235,7 +235,7 @@ does this move imply bad things?
            ; not protected by a tower:
            (= 0 (nb-protections pos (add1 (pos-num-pawns pos))));2))
            ; move onto another pawn:
-           (sayf "Let's raise that!")
+           (say "Let's raise that!")
            (or (for/or ([rev-raise-path
                          (send game find-raise-path* pos)])
                  (debug-var rev-raise-path)

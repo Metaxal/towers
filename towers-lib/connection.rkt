@@ -140,7 +140,6 @@ The password thus does NOT travel in plain text.
   (number? . -> . any)
   (do-action "rejectgame" `((gameid . ,(number->string id)))))
 
-; Should add finished, winner, etc. ?
 (define/contract (update-game game-id ply);game next-player winner
   (number? list? . -> . any)
   (do-action "updategame"
@@ -156,4 +155,3 @@ The password thus does NOT travel in plain text.
 (define (check-authentication)
   (not (not (do-action "checkauth"))))
 
-;;; See tests/connection.rkt for some tests

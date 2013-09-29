@@ -1,8 +1,7 @@
 #lang racket
 (require towers-lib/base
          towers-lib/game
-         towers-lib/player
-         towers-lib/connection
+         towers-lib/player ; to load the players
          bazaar/rackunit
          )
 
@@ -53,13 +52,13 @@
 
   (send g2 get-current-name)
   (check-false (send g2 play-move mv2 #:test? #t)) ; not allowed
-  (send g2 play-move 'end) ; next player
+  (send g2 end-player-turn) ; next player
   (check-equal? (send g2 get-plies) (list (list mv1) '()))
   (check-equal? (send g2 play-move mv2 #:test? #t) 1)
   (send g2 play-move mv2) ; ok, now allowed
   (check-equal? (send g2 get-plies) (list (list mv1) (list mv2)))
   (debug-game g2)
 
-  (send g2 play-move 'end)
+  (send g2 end-player-turn)
   (debug-game g2)
   )

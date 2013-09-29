@@ -52,6 +52,36 @@
          (* (or n (cell-num-pawns xi yi))
             (+ (abs (- xf xi)) (abs (- yf yi))))]
         ))
+    
+    ;; Returns the list of valid moves in a range of 1 cell around each
+    ;; owner cell, including (when possible) 'end, '(import 1), and
+    ;; master tower out.
+    (define/public (find-valid-1moves)
+      (define nb-cells (send game get-nb-cells))
+      (define moves '(end))
+      (when (can-import?)
+        (cons! '(import 1) moves))
+      (when (> move-points 0)
+        (matrix-for-each
+         (send game get-mat)
+         (λ(y x c)
+           (let ([c (cell->relative-cell c)])
+             (when (> c 0) ; owner cell
+               (define height (send game cell-num-pawns c))
+               (when (<= height move-points)
+                 (for ([dx '(-1 0 1 0)]
+                       [dy '(0 -1 0 1)])
+                   (define x2 (+ x dx))
+                   (define y2 (+ y dy))
+                   (when (and (< -1 x2 nb-cells) (< -1 y2 nb-cells))
+                     (when (send game move x y x2 y2 height #:test? #t)
+                       (cons! (list 'move x y x2 y2 height) moves))
+                     ; Master tower-out
+                     (when (and (send game cell-has-master? c)
+                                (> height 1)
+                                (send game move x y x2 y2 1 #:test? #t))
+                       (cons! (list 'move x y x2 y2 1) moves))))))))))
+      moves)
 
     (define/public (find-my-cells)
       (let ([my-cells '()]
@@ -95,6 +125,7 @@
            (list 'import 1)))
 
 
+    ;; Obsolete with find-valid-1moves
     (define/public (find-pos-possible-moves pos [tower-out #f])
       (let-values ([(cx cy) (apply values pos)])
         (let* ([height (pos-num-pawns pos)]

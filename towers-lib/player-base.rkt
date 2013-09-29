@@ -64,14 +64,16 @@
            [game #f])
 
     (getter/setter name opponent num-pawns-reserve move-points master-pos game verbose?)
+    
+    (define/public (->text)
+      (format "~a: ~a/~a" name move-points num-pawns-reserve))
 
-    (define/public (say str)
+    (define/public (say str #:prefix [prefix ""] . args)
       (when verbose?
-        (printf "~a says: ~a\n" name str)))
-
-    (define/public (sayf str . args)
-      (when verbose?
-        (printf "~a says: ~a\n" name (apply format str args))))
+        (printf "~a~a says: ~a\n" prefix name 
+                (if (empty? args)
+                    str
+                    (apply format str args)))))
 
     (define/public (get-class-name)
       ;(class->string this%)
@@ -154,6 +156,9 @@
 
     (define/public (on-end-game winner)
       (void))
+    
+    (define/public (on-play-ply #:between [between void] #:after [after void])
+      (void))
 
     ;; Must call only ONE of the actions
     (define/public (on-play-move)
@@ -161,7 +166,7 @@
 
     (define/public (do-end-turn)
       (if (current-player?)
-          (send game player-end-turn)
+          (send game end-player-turn)
           (error "Not allowed to end turn")))
 
     ;(define/public (do-import)
@@ -190,7 +195,7 @@
       )
 
     ;; Must be called in tail position!
-    ;;; Plays one move, then calls on-play-move back
+    ;; Plays one move, then calls on-play-move back
     (define/public (play-move* mv)
       (play-move mv)
       ; tail position:
@@ -226,7 +231,6 @@
 
     (define/public (master-attacked?)
       (send game find-attacked-path* master-pos #t #:attacker opponent))
-
 
 ))
 

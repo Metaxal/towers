@@ -65,7 +65,7 @@
 
 ; Display the game in the logger
 (define (debug-game g)
-  (log-debug (string-append "\n" (send g ->string))))
+  (log-debug (string-append "\n" (send g ->text))))
 
 (define (loop-receive . receivers)
   (void
