@@ -21,7 +21,9 @@
 (provide (all-defined-out))
 
 (define (gui-can-play?)
-  (and (player-human? current-player) (can-current-player-play?) (not replaying?)))
+  (and (player-human? current-player)
+       (can-current-player-play?)
+       (not replaying?)))
 
 
 (define (get-tower-bmp player master?)

@@ -119,10 +119,12 @@ The password thus does NOT travel in plain text.
 
 (define/contract (get-game id)
   (number? . -> . (or/c #f (is-a?/c game<%>)))
-  (define lg (do-action "getgame" `((gameid . ,(number->string id)))))
-  #;(log-debug "Received by get-game: ~v" lg)
-  (and lg (list? lg)
-       (list-game->game lg #:network-game-id id)))
+  (match (do-action "getgame" `((gameid . ,(number->string id))))
+    [(list lg accepted)
+     #;(log-debug "Received by get-game: ~v" lg)
+     (list-game->game lg #:network-game-id id #:accepted accepted)]
+    [else #f])
+  )
 
 (define/contract (new-game g)
   ((is-a?/c game<%>) . -> . number?)

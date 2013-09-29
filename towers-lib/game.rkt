@@ -875,7 +875,8 @@
 
 (define network-game%
   (class game%
-    (init-field [network-id #f])
+    (init-field [network-id #f]
+                [accepted 'no])
 
     (inherit-field replaying? winner current-player)
     (inherit last-ply)
@@ -884,6 +885,7 @@
 
     (define/override (can-current-player-play?)
       (and (not winner)
+           (eq? accepted 'yes)
            (or (replaying?)
                (user=? (send current-player get-name)
                        ; Make a player-network% player instead!! (and test if current-player)
@@ -907,7 +909,8 @@
 
 (set-list-game->game
  (λ(l [player1-class #f] [player2-class #f]
-      #:network-game-id [net-id #f])
+      #:network-game-id [net-id #f]
+      #:accepted [accepted "yes"])
   (match l
     [(list version rules nb-cells name1 name2 class1 class2 plies)
      (if net-id
@@ -920,7 +923,8 @@
               [player1-class (if (current-user? name1) "Human" "Network")]
               [player2-class (if (current-user? name2) "Human" "Network")]
               [plies          plies]
-              [network-id     net-id])
+              [network-id     net-id]
+              [accepted       (string->symbol accepted)])
          (new game%
               [version        version]
               [rules          rules]

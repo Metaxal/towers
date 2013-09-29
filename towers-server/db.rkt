@@ -123,24 +123,28 @@
    user user
    extra-args))
 
+;; Returns the list of games that have not be rejected, i.e. it includes games
+;; asked for acceptance.
 (define (get-game-list user)
-  (get-game-list-ex user "AND accepted = 'yes'"))
+  (get-game-list-ex user "AND accepted != 'no'"))
 
+;; Same as get-game-list, but only games that are not finished yet.
 (define (get-current-game-list user)
-  (get-game-list-ex user "AND accepted = 'yes' AND winner=''"))
+  (get-game-list-ex user "AND accepted != 'no' AND winner=''"))
 
 ;; Returns the list of games asking for acceptance by the user
 (define (get-ask-game-list user)
   (get-game-list-ex user "AND accepted = 'ask' AND creator != ?" user))
 
 (define (get-game user game-id)
-  (define str
-    (query-maybe-value
+  (define vec
+    (query-maybe-row
      cnx
-     "SELECT fullGame FROM games WHERE gameID = ? AND (username1 = ? OR username2 = ?)"
+     "SELECT fullGame, accepted FROM games WHERE gameID = ? AND (username1 = ? OR username2 = ?)"
      game-id user user))
-  (and str
-       (read (open-input-string str))))
+  (and vec
+       (list (read (open-input-string (vector-ref vec 0)))
+             (vector-ref vec 1))))
 
 (define (accept-game user game-id [accepted "yes"])
   (query-exec 

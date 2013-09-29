@@ -328,11 +328,11 @@
             (string-append "Games - " user))
       ; fill the list box with games
       (define games (if show-finished? (network:get-game-list) (network:get-current-game-list)))
-      (define ask-games (network:get-ask-game-list))
+      ;(define ask-games (network:get-ask-game-list)) ; not used anymore, contained in games
       (define i-current-game #f)
       (define-values (rows data)
         (for/fold ([rows '()] [data '()]) 
-          ([g (in-sequences games ask-games)]
+          ([g (in-sequences games #;ask-games)]
            [i (in-naturals)])
           (match g
             [(vector id size creator pl1 pl2 secs next-player p-winner accepted)
@@ -343,7 +343,8 @@
                (list (number->string id) pl1 pl2
                      (number->string size)
                      (date-iso-like (seconds->date secs) #:time? #t)
-                     (cond [(equal? accepted "ask") "??"] ; ask player
+                     (cond [(equal? accepted "ask") 
+                            (if (current-user? creator) "Waiting..." "* Accept?")] ; ask player
                            [(equal? "" p-winner)
                             (starred-current-user next-player)]
                            [else ""])
@@ -367,7 +368,8 @@
   (defm (vector id size creator pl1 pl2 secs next-player p-winner accepted) data)
   (log-debug "Loading game by user: ~a" id)
   (with-error-to-msg-box (load-network-game id))
-  (when (equal? "ask" accepted)
+  (when (and (not (current-user? creator)) 
+             (equal? "ask" accepted))
     (define resp
       (message-box "Accept new game?"
                    (string-append "Would you like to play this game with " creator "?")
