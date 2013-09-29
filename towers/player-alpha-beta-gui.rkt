@@ -22,7 +22,7 @@
 
     (define diag (new dialog% [parent main-frame] [label "Difficulty"]))
     (define lb-difficulty (new choice% [parent diag]
-                               [label "Choose a difficulty level:"]
+                               [label "Choose a difficulty level (ply search depth):"]
                                [choices (build-list 7 (λ(n)(number->string (+ n 1))))]))
     (define bt-ok (new button% [parent diag]
                        [label "Ok"]
