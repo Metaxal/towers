@@ -23,6 +23,7 @@
 #| Possible optimizations
 - find-all-possible-moves does a lot of work. A lot of it is redundant.
 - copy-game is intensive too, as it copies not only the matrix but the plies also.
+- also shut down the logs in all calls used by alpha-beta (in towers-lib)
 |#
 
 (define move-depth-max 200) ; max number of moves we allow to consider
