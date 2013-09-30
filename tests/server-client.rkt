@@ -63,7 +63,7 @@
   (define net-id2 (new-game g))
   (check-pred number? net-id2)
   (let ([lg (get-game-list)])
-    (check-equal? (length lg) 0)
+    (check-equal? (length lg) 2)
     (check-pred (listof vector?) lg))
   
   ; Change user, verify that it sees the games too
@@ -73,7 +73,7 @@
   ; accept the game
   (accept-game net-id)
   ; verify that we have at least one game to play
-  (check-equal? (length (get-game-list)) 1)
+  (check-equal? (length (get-game-list)) 2)
   ; verify that the accepted game has been removed from the list of ask-games
   (check-equal? (length (get-ask-game-list)) 1)
 
