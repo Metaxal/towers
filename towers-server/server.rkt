@@ -1,7 +1,10 @@
-#!/usr/bin/env racket
 #lang racket/base
 ;;; Copyright (C) Laurent Orseau, 2010-2013
 ;;; GNU General Public Licence 3 (http://www.gnu.org/licenses/gpl.html)
+
+
+;;; TODO: Double salt! Salt on client and salt on server
+;;; Otherwise the password are as good as not salted...
 
 (require (prefix-in db: "db.rkt")
          ;towers-lib/preferences
@@ -50,7 +53,7 @@
   res)
 
 (define (update-game user game-id ply)
-  (define lg (db:get-game user game-id))
+  (define lg (first (db:get-game user game-id)))
   (define g (list-game->game lg "ServerTest" "ServerTest")) ; raises error if incorrect game
 
   (send g replay-game)
