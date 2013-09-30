@@ -20,10 +20,14 @@
 
 (define-logger alpha-beta)
 
-#| Possible optimizations
+#| Possible optimizations:
 - find-all-possible-moves does a lot of work. A lot of it is redundant.
-- copy-game is intensive too, as it copies not only the matrix but the plies also.
+- copy-game is intensive too, as it copies not only the matrix but the plies, the rules, etc.
 - also shut down the logs in all calls used by alpha-beta (in towers-lib)
+- do not play moves that could have been played earlier in the same ply?
+  could reduce a lot the search space (from power to factorial or combinations),
+  but may also be inaccurate at times (though only rarely I think)
+- do not move backwards, w.r.t. a previous move in the same ply
 |#
 
 (define move-depth-max 200) ; max number of moves we allow to consider

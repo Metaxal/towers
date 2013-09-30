@@ -13,7 +13,7 @@
 (current-logger towers-lib-logger)
 (define tll-rc (make-log-receiver towers-lib-logger 'debug))
 (define ab-rc  (make-log-receiver alpha-beta-logger 'debug))
-(loop-receive #;tll-rc ab-rc)
+#;(loop-receive tll-rc ab-rc)
 
 (load-preferences)
 
@@ -41,26 +41,26 @@
     (check-equal? ply '((move 3 4 2 4 1))))
   )
 
-; DOES NOT WORK YET!
-(let ([g1 (list-game->game (file->value "master-reachable2.twr"))])
+#;(let ([g1 (list-game->game (file->value "master-reachable2.twr"))])
   (send g1 replay-game)
   ;(debug-game g1)
   (send g1 display-text)
   (define pl2 (send g1 get-player2))
   (displayln (send pl2 find-valid-1moves))
   (send pl2 set-ply-depth-max #;2 3)
-  (time (send pl2 find-best-ply))
+  (check-equal? (time (send pl2 find-best-ply))
+                '((move 2 0 3 0 1)))
   #;(printf "nb-move-searched: ~a\n" (send pl2 get-nb-move-searched))
   )
 
 ; Test case for computation time
-#;(let ([g1 (list-game->game (file->value "alpha-beta1.twr"))])
+(let ([g1 (list-game->game (file->value "alpha-beta1.twr"))])
   (send g1 replay-game)
   ;(debug-game g1)
   (send g1 display-text)
   (define pl2 (send g1 get-player2))
   (displayln (send pl2 find-valid-1moves))
-  (send pl2 set-ply-depth-max 2)
+  (send pl2 set-ply-depth-max #;1 2)
   (time (send pl2 find-best-ply))
   (printf "nb-move-searched: ~a\n" (send pl2 get-nb-move-searched))
   )

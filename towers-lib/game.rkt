@@ -293,14 +293,14 @@
         #;(log-debug (list 'new-plies plies))))
 
     (define (add-move-to-current-ply move)
-      (log-debug "add-move ~a last-ply: ~a plies: ~a replaying? ~a"
+      #;(log-debug "add-move ~a last-ply: ~a plies: ~a replaying? ~a"
                  move
                  (last-ply)
                  "[skip]"#;plies
                  (replaying?))
       (unless (replaying?)
         (replace-current-ply (consr move (last-ply))))
-      (log-debug "New plies: ~a" plies))
+      #;(log-debug "New plies: ~a" plies))
 
     ;;;;;;;;;;;;;;;
     ;;; Actions ;;;
@@ -532,7 +532,7 @@
           (replace-current-ply (remove-last current-ply)))))
 
     (define/public (play-move mv #:test? [test? #f])
-      (log-debug "play-move~a: ~a" (if test? " (test)" "") mv)
+      #;(log-debug "play-move~a: ~a" (if test? " (test)" "") mv)
       (match mv
         [(list 'move xi yi xf yf n)
          (move xi yi xf yf n #:test? test?)]
