@@ -17,8 +17,8 @@
 
 (current-logger towers-lib-logger)
 
-
 (load-preferences "prefs-test.rktd")
+
 ;(send prefs set 'database #f #:save? #f) ; the database may not exist yet.
 ;(send prefs set 'server-port "8081")
 (db:set-connection
@@ -40,6 +40,8 @@
   (void (thread start-server)))
 (sleep 3)
 (log-debug "Server started (hopefully).")
+
+(check-not-fail (get-server-version))
 
 (check-fail (create-user "" "" ""))
 

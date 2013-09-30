@@ -101,7 +101,9 @@
       (string-join (map ~v (list date user pwd version action)))))
 
     (set! response
-          (cond [(not user)
+          (cond [(equal? action "getversion")
+                 (send prefs get 'server-version)]
+                [(not user)
                  (fail "Username must be provided")]
                 [(equal? action "newuser")
                  (create-user user pwd (get-value 'salt) (get-value 'email))]

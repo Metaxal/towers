@@ -33,6 +33,7 @@ The password thus does NOT travel in plain text.
          get-game
          new-game
          get-players
+         get-server-version
          )
 
 (require "base.rkt"
@@ -160,6 +161,9 @@ The password thus does NOT travel in plain text.
 
 (define (check-authentication)
   (not (not (do-action "checkauth"))))
+
+(define (get-server-version)
+  (do-action "getversion"))
 
 (module+ test
   (require bazaar/rackunit)
