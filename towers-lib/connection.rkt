@@ -90,6 +90,10 @@ The password thus does NOT travel in plain text.
   (log-debug "Url: ~v" (url->string u))
   (define response
     (call/input-url u get-pure-port (λ(p)(port->list read p))))
+  ; Cleaner? :
+  #;(define response
+    (let-values ([(status l p) (http-sendrecv/url u)])
+      (port->list read p)))
   (log-debug "Received response:~v" response)
   (match response
     [(list `'(Error ,args ...))
@@ -157,3 +161,15 @@ The password thus does NOT travel in plain text.
 (define (check-authentication)
   (not (not (do-action "checkauth"))))
 
+(module+ test
+  (require bazaar/rackunit)
+  (current-logger towers-lib-logger)
+  (define tll-rc (make-log-receiver towers-lib-logger 'debug))
+  #;(define tls-rc (make-log-receiver towers-server-logger 'debug))
+  (loop-receive tll-rc #;tls-rc)
+
+  ; the player's current preferences for the server!
+  (load-preferences)
+  ; should contact the main server!
+  #;(check-not-fail (get-salt))
+  )
