@@ -1,4 +1,6 @@
 #lang racket
+;;; Copyright (C) Laurent Orseau, 2010-2013
+;;; GNU General Public Licence 3 (http://www.gnu.org/licenses/gpl.html)
 
 (require towers-lib/base
          towers-lib/game ; to set list-game->game
