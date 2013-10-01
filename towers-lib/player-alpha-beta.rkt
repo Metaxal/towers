@@ -23,11 +23,27 @@
 #| Possible optimizations:
 - find-all-possible-moves does a lot of work. A lot of it is redundant.
 - copy-game is intensive too, as it copies not only the matrix but the plies, the rules, etc.
+  -> make a `copy-light!' method?
 - also shut down the logs in all calls used by alpha-beta (in towers-lib)
 - do not play moves that could have been played earlier in the same ply?
   could reduce a lot the search space (from power to factorial or combinations),
   but may also be inaccurate at times (though only rarely I think)
 - do not move backwards, w.r.t. a previous move in the same ply
+|#
+
+#| Notes
+
+- It is not entirely a "classic" alpha-beta, because the number of moves
+  per ply is variable.
+
+- The considered depth must be the ply-depth and not the move depth.
+  Otherwise, there can be some logic problems:
+  the number of considered plies depends on the lengths of the plies,
+  and we end up comparing apples and oranges.
+
+- Therefore even for (ply-)depth 2, we may consider actually a large move-depth,
+  which makes the algorithm impratical except for 
+
 |#
 
 (define move-depth-max 200) ; max number of moves we allow to consider
@@ -50,9 +66,10 @@
 
     (field [ply-depth-max 1] ; ply-depth max
            [game-simu-dict #f] ; a pool of games, to avoid initializing objects all the time
+           [stop-search? #f] ; force the search to stop when #t
+           ; Statistics for the patient opponent:
            [nb-move-total 1]
            [nb-move-remaining 1]
-           [stop-search? #f]
            [nb-move-searched 0]
            )
 
@@ -169,6 +186,8 @@
                                  [else
                                   (loop best-ply alpha (rest moves))])]))]))]))
     
+    ;; Returns the ply and the value of the best value,
+    ;; after simulating all plies to depth `ply-depth'.
     (define/public (find-best-ply)
       (log-debug "Starting Alpha-Beta simulation")
       (init-simu-dict)
@@ -186,6 +205,8 @@
 
     (define ply-to-play '())
     
+    ;; Finds the best ply to play,
+    ;; then plays this ply move by move after each call.
     (define/override (on-play-move)
       (when (empty? ply-to-play)
         (define-values (ply v) (time (find-best-ply)))
