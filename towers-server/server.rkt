@@ -108,7 +108,7 @@
                 [(equal? action "newuser")
                  (create-user user pwd (get-value 'salt) (get-value 'email))]
                 [(equal? action "getsalt")
-                 (or (db:get-salt user)
+                 (or (db:get-client-salt user)
                      (fail "Could not retrieve salt for user " user))]
                 [(and action pwd)
                  (if (not (db:verify-user user pwd))

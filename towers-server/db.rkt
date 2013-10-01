@@ -2,7 +2,7 @@
 ;;; Copyright (C) Laurent Orseau, 2010-2013
 ;;; GNU General Public Licence 3 (http://www.gnu.org/licenses/gpl.html)
 
-(require (only-in towers-lib/connection encode-password current-user)
+(require (only-in towers-lib/connection encode-password current-user make-salt)
          towers-lib/base
          ;towers-lib/preferences
          bazaar/debug
@@ -19,7 +19,7 @@
          set-connection
          set-auto-connection
          close-connection
-         get-salt
+         get-client-salt
          verify-user
          create-user
          get-players
@@ -73,26 +73,36 @@
 (define (disconnection)
   (disconnect cnx))
 
+;; Returns the password and the server-salt if they exist.
 (define (get-pwd+salt user)
   (define pwd:salt
-    (query-rows
+    (query-maybe-row
      cnx
-     "SELECT password, salt FROM users WHERE username = ? AND isPlayer = 1 AND block = 0"
+     "SELECT password, server_salt FROM users WHERE username = ? AND isPlayer = 1 AND block = 0"
      user))
-  (if (not (empty? pwd:salt))
-      (apply values (vector->list (first pwd:salt)))
+  (if pwd:salt
+      (apply values (vector->list pwd:salt))
       (values #f #f)))
 
-(define (get-salt user)
+(define (get-server-salt user)
   (query-maybe-value
    cnx
-   "SELECT salt FROM users WHERE username = ? AND isPlayer = 1 AND block = 0"
+   "SELECT server_salt FROM users WHERE username = ? AND isPlayer = 1 AND block = 0"
    user))
 
-(define (verify-user user enc-pwd)
-  (define-values (true-pwd salt) (get-pwd+salt user))
-  (and true-pwd
-       (equal? true-pwd enc-pwd)))
+(define (get-client-salt user)
+  (query-maybe-value
+   cnx
+   "SELECT client_salt FROM users WHERE username = ? AND isPlayer = 1 AND block = 0"
+   user))
+
+;; Takes a password that is already encoded with the client-salt,
+;; encodes it again with the server salt, and compares it with the
+;; stored password.
+(define (verify-user user pwd)
+  (define-values (enc-pwd server-salt) (get-pwd+salt user))
+  (and enc-pwd
+       (equal? (encode-password pwd server-salt) enc-pwd)))
 
 (define (get-players)
   (query-list
@@ -182,16 +192,25 @@
    "SELECT username, elo FROM users WHERE isPlayer = 1 AND block = 0 ORDER BY elo DESC LIMIT ?, ?"
    start end))
 
-(define (create-user user pwd salt email)
-  ; TODO: verify that the salt is complex, to avoid attacks to guess the random generator
-  ;(check-salt)
+;; `pwd' must already be salted by `salt' (which is the client salt)
+;; and will be salted again by a new server-side salt.
+;; For a raw password on the client side, the client must request the client-salt,
+;; encode the password with it, send the encoded password to the server,
+;; which stores it encoded it again with a server-salt.
+;; The client salt allows to avoid storing the password in clear text on the client and on the 
+;; network, but does not prevent a MITM attack to get the encrypted password and use it to log
+;; into the user's account.
+;; The server salting avoids giving an attacker all access to all user accounts if the db is cracked.
+(define (create-user user pwd client-salt email)
   ;(check-email)
+  (define server-salt (make-salt))
+  (set! pwd (encode-password pwd server-salt))
   (query-exec
    cnx
-   "INSERT INTO users (name, username, email, password, salt, usertype, block, sendEmail, isPlayer,
-    gameNotifyEmail, elo)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-   user user email pwd salt "Registered" 0 1 1 1 1000))
+   "INSERT INTO users (name, username, email, password, client_salt, server_salt, usertype, block, 
+   sendEmail, isPlayer, gameNotifyEmail, elo)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+   user user email pwd client-salt server-salt "Registered" 0 1 1 1 1000))
 
 
 ;==========================;
@@ -257,7 +276,8 @@
   `username`         varchar(150) NOT NULL DEFAULT '',
   `email`            varchar(100) NOT NULL DEFAULT '',
   `password`         varchar(100) NOT NULL DEFAULT '',
-  `salt`             varchar(100) NOT NULL DEFAULT '',
+  `client_salt`      varchar(100) NOT NULL DEFAULT '',
+  `server_salt`      varchar(100) NOT NULL DEFAULT '',
   `usertype`         varchar(25) NOT NULL DEFAULT '',
   `block`            tinyint(4) NOT NULL DEFAULT '0',
   `sendEmail`        tinyint(4) DEFAULT '0',
