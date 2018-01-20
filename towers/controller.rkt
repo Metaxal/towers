@@ -36,7 +36,8 @@
          )
 
 (define (on-towers-exit)
-  (send update-network-game-timer stop)
+  (when update-network-game-timer
+    (send update-network-game-timer stop))
   (send main-frame show #f)
   (send frame-rules show #f)
   (send frame-games show #f)
@@ -62,6 +63,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (controller-init)
+  (set! update-network-game-timer
+        (new timer% [notify-callback timer-update-callback]
+             [interval 60000]))
 
   (set-auto-end-turn)
 
@@ -489,7 +493,7 @@
 ;; Instead of downloading and replaying the whole game,
 ;; we could just download who is the next player and download the game if it is the current user.
 (define (timer-update-callback)
-  (unless (and main-frame (send main-frame is-shown?))
+  (unless (and main-frame (send main-frame is-shown?) update-network-game-timer)
     (send update-network-game-timer stop)
     (set! update-network-game-timer #f)
     )
@@ -516,10 +520,7 @@
       (send fb-opponent-has-played show #t)
       )))
 
-(define update-network-game-timer
-  (new timer% [notify-callback timer-update-callback]
-       [interval 60000]))
-
+(define update-network-game-timer #f)
 
 ;;;;;;;;;;;;;;;;;;;
 ;;; Preferences ;;;
