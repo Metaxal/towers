@@ -290,7 +290,9 @@
   KEY `email` (`email`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 AUTO_INCREMENT=0"))
 
-(module+ test
+(module+ drracket ;test
+  ; These tests will fail if the preferences are not correctly setup
+  ; hence the drracket submodule rather than the test submodule.
   (require bazaar/rackunit)
   (load-preferences)
   (set-connection 
