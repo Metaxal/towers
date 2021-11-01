@@ -13,7 +13,7 @@
          bazaar/getter-setter
          bazaar/version
          bazaar/list
-         bazaar/text-table ; to display the text game
+         #;bazaar/text-table ; to display the text game
          racket/bool
          racket/list
          racket/class
@@ -21,6 +21,7 @@
          racket/math
          racket/format
          racket/string
+         text-table
          )
 
 ;;; This is the core of the game,
@@ -123,26 +124,14 @@
       (~a s #:align 'center #:min-width 7))
 
     (define/public (->text)
-      (define tb
-        (table-framed
-         (cons '< (append
-                   (add-between (build-list nb-cells (λ(n)(list "" 7))) '+)
-                   '(>)))
-         #;'rounded 'double))
-
       (define ll
-        (append
-         (list (table-first-line tb))
-         (add-between
-          (for/list ([row nb-cells])
-            (table-row tb (for/list ([col nb-cells])
-                            (define c (matrix-ref mat row col))
-                            (cell->string row col c))))
-          (table-mid-line tb))
-         (list (table-last-line tb))))
+        (for/list ([row nb-cells])
+          (for/list ([col nb-cells])
+            (define c (matrix-ref mat row col))
+            (cell->string row col c))))
       (string-append
        (send player2 ->text) "\n"
-       (string-join ll "\n") "\n"
+       (table->string ll #:framed? #true) "\n"
        (send player1 ->text) "\n"))
 
     (define/public (display-text)
